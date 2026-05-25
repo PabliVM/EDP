@@ -1,9 +1,9 @@
 // ================================================
-// RENDER-TABS.JS — Pestañas genéricas
+// RENDER-TABS.JS — Pestañas
 // ================================================
 
-import { state, setState } from './state.js';
-import { TABS }            from './constants.js';
+import { porterosState, setPorterosState } from './porteros-state.js';
+import { TABS } from './constants.js';
 
 export function renderTabs() {
   const nav = document.getElementById('rm-tabs');
@@ -11,7 +11,7 @@ export function renderTabs() {
 
   nav.innerHTML = TABS.map(tab => `
     <button
-      class="tab-btn ${state.activeTab === tab.key ? 'active' : ''}"
+      class="tab-btn ${porterosState.activeTab === tab.key ? 'active' : ''}"
       data-tab="${tab.key}">
       ${tab.label}
     </button>
@@ -23,19 +23,16 @@ export function renderTabs() {
 }
 
 export function switchTab(tabKey) {
-  if (state.activeTab === tabKey) return;
-  setState({ activeTab: tabKey });
+  if (porterosState.activeTab === tabKey) return;
+  setPorterosState({ activeTab: tabKey });
 
-  // Actualizar botones
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabKey);
   });
 
-  // Mostrar/ocultar paneles
   document.querySelectorAll('.tab-panel').forEach(panel => {
     panel.classList.toggle('hidden', panel.dataset.tab !== tabKey);
   });
 
   document.dispatchEvent(new CustomEvent('rm:tab-changed', { detail: tabKey }));
 }
-
