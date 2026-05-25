@@ -156,11 +156,11 @@ function renderBlockEditor(block, idx) {
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
       <span class="fw-700" style="font-size:12px;flex:1;">${safeText(label)}</span>
       <button class="btn btn-ghost btn-sm" data-remove="${idx}">✕</button>
-    </div>
-    <div class="field-group">
-      <label class="label">Contenido</label>
-      <textarea class="textarea block-field" data-idx="${idx}" data-field="content" rows="2">${safeText(block.content || '')}</textarea>
-    </div>
+
+<div class="field-group">
+  <label class="label">Contenido</label>
+  ${buildConceptSelect(idx, block)}
+</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
       <div class="field-group">
         <label class="label">Intensidad</label>
