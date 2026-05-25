@@ -14,7 +14,7 @@ export const DEFAULT_SEASONS = [
 ];
 
 export const TABS = [
-  { key: 'inicio',        label: 'Inicio'        },
+  { key: 'semana',        label: 'Semana'        },
   { key: 'dashboard',     label: 'Dashboard'     },
   { key: 'configuracion', label: 'Configuración' },
 ];
