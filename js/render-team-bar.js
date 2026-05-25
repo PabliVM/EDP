@@ -10,7 +10,7 @@ export function renderTeamBar() {
   if (!container) return;
 
   const bar = document.createElement('div');
-  bar.style.cssText = 'display:flex;align-items:stretch;height:100%;padding:0 4px;';
+  bar.style.cssText = 'display:flex;align-items:center;height:100%;padding:0 12px;gap:6px;';
 
   PORTEROS_TEAMS.forEach(team => {
     const btn = document.createElement('button');
