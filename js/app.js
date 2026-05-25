@@ -40,9 +40,9 @@ function setupEvents() {
     if (porterosState.activeTab === 'semana') renderInicio();
   });
 
-  document.addEventListener('rm:season-changed', () => {
-    if (porterosState.activeTab === 'semana') renderWeekPlanning();
-  });
+document.addEventListener('porteros:team-changed', () => {
+  if (porterosState.activeTab === 'semana') renderWeekPlanning();
+  else renderInicio();
 
   document.addEventListener('rm:tab-changed', e => {
     setPorterosState({ activeTab: e.detail });
