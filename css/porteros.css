@@ -306,3 +306,21 @@
   flex-shrink: 0;
 }
 .btn-header-icon:hover { background: rgba(255,255,255,0.1); }
+/* ── CONFIG PANEL TABS ── */
+.config-tab-btn {
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+.config-tab-btn:hover { color: var(--text-primary); }
+.config-tab-btn.active {
+  color: var(--blue-500);
+  border-bottom-color: var(--blue-500);
+}
