@@ -1,17 +1,16 @@
 // ================================================
 // APP.JS — Bootstrap
 // ================================================
-
 import { initFirebase, listenSeasons, listenConfig, initConfigIfEmpty } from './firebase-service.js';
 import { porterosState, setPorterosState } from './porteros-state.js';
 import { PORTEROS_ICONS }                  from './porteros-constants.js';
 import { renderHeader }                    from './render-header.js';
 import { renderTeamBar }                   from './render-team-bar.js';
-import { renderTabs, switchTab }           from './render-tabs.js';
+import { renderTabs }                      from './render-tabs.js';
 import { renderFooter }                    from './render-footer.js';
 import { renderWeekPlanning }              from './render-week-planning.js';
-import { showError }                       from './utils.js';
 import { renderInicio }                    from './render-inicio.js';
+import { showError }                       from './utils.js';
 
 function renderOverlay() {
   if (document.getElementById('porteros-overlay')) return;
@@ -37,16 +36,16 @@ function renderTeamBarContainer() {
 
 function setupEvents() {
   document.addEventListener('porteros:team-changed', () => {
-    if (porterosState.activeTab === 'semana') renderInicio();
+    renderWeekPlanning();
   });
 
-document.addEventListener('porteros:team-changed', () => {
-  if (porterosState.activeTab === 'semana') renderWeekPlanning();
-  else renderInicio();
+  document.addEventListener('rm:season-changed', () => {
+    if (porterosState.activeTab === 'semana') renderWeekPlanning();
+  });
 
   document.addEventListener('rm:tab-changed', e => {
     setPorterosState({ activeTab: e.detail });
-    if (e.detail === 'semana') renderWeekPlanning();
+    if (e.detail === 'semana') renderInicio();
   });
 }
 
@@ -94,8 +93,8 @@ async function boot() {
   loadConfig();
 
   setTimeout(() => {
-  renderInicio();
-}, 600);
+    renderInicio();
+  }, 600);
 }
 
 document.addEventListener('DOMContentLoaded', boot);
