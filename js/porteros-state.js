@@ -16,6 +16,7 @@ const _state = {
   darkMode:      false,
   icons:         null,
   microciclos:   {},
+  conceptos:     {},
 };
 
 export const porterosState = _state;
