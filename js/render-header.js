@@ -1,79 +1,83 @@
 // ================================================
-// RENDER-HEADER.JS — Header corporativo RM
+// RENDER-HEADER.JS
 // ================================================
 
-import { state, setState } from './state.js';
-import { LOGO_PATH }       from './constants.js';
-import { safeText, showError } from './utils.js';
+import { porterosState, setPorterosState } from './porteros-state.js';
+import { LOGO_PATH }                        from './constants.js';
+import { safeText, showError }              from './utils.js';
 
 export function renderHeader() {
   const header = document.getElementById('rm-header');
   if (!header) return;
 
+  const isInicio = !porterosState.activeTeam || porterosState.currentView === 'inicio';
+
   header.innerHTML = `
     <div class="rm-header-inner">
-
       <div class="header-left">
         <div class="header-logo">
           <img src="${LOGO_PATH}" alt="RM" />
         </div>
-        <span class="header-app-name">${safeText(state.appName)}</span>
+        <span class="header-app-name">Coordinación EDP</span>
       </div>
-
       <div class="header-right">
+        ${!isInicio ? `<button class="btn-header-action" id="btn-equipos" title="Volver a equipos">← Equipos</button>` : ''}
         <select class="season-select" id="season-select" title="Temporada activa">
-          ${state.seasons.map(s => `
-            <option value="${safeText(s)}" ${s === state.activeSeason ? 'selected' : ''}>
+          ${porterosState.seasons.map(s => `
+            <option value="${safeText(s)}" ${s === porterosState.activeSeason?.seasonKey ? 'selected' : ''}>
               ${safeText(s)}
             </option>
           `).join('')}
         </select>
-        <button class="btn-season-add" id="btn-season-add" type="button" title="Añadir temporada">＋</button>
-        <button class="btn-theme"      id="btn-theme"      type="button" title="Cambiar modo">
-          ${state.darkMode ? '☀️' : '🌙'}
+        <button class="btn-header-icon" id="btn-add-season" title="Añadir temporada">＋</button>
+        <button class="btn-header-action" id="btn-config" title="Configuración">⚙ Config</button>
+        <button class="btn-header-icon" id="btn-theme" title="Modo oscuro">
+          ${porterosState.darkMode ? '☀️' : '🌙'}
         </button>
       </div>
-
     </div>
   `;
 
-  document.getElementById('season-select').addEventListener('change', onSeasonChange);
-  document.getElementById('btn-season-add').addEventListener('click', onAddSeason);
   document.getElementById('btn-theme').addEventListener('click', toggleTheme);
-}
-
-function onSeasonChange(e) {
-  setState({ activeSeason: e.target.value });
-  document.dispatchEvent(new CustomEvent('rm:season-changed', { detail: e.target.value }));
-}
-
-function onAddSeason() {
-  const input = prompt('Nueva temporada (formato YYYY/YYYY):');
-  if (input === null) return;
-
-  const value = input.trim();
-
-  if (!value) {
-    showError('El nombre de la temporada no puede estar vacío.');
-    return;
-  }
-  if (!/^\d{4}\/\d{4}$/.test(value)) {
-    showError('Formato incorrecto. Usa YYYY/YYYY, por ejemplo 2028/2029.');
-    return;
-  }
-  if (state.seasons.includes(value)) {
-    showError(`La temporada ${value} ya existe.`);
-    return;
-  }
-
-  setState({ seasons: [...state.seasons, value], activeSeason: value });
-  renderHeader();
-  document.dispatchEvent(new CustomEvent('rm:season-changed', { detail: value }));
+  document.getElementById('btn-config').addEventListener('click', openConfig);
+  document.getElementById('btn-add-season')?.addEventListener('click', onAddSeason);
+  document.getElementById('season-select')?.addEventListener('change', onSeasonChange);
+  document.getElementById('btn-equipos')?.addEventListener('click', () => {
+    document.dispatchEvent(new CustomEvent('edp:go-inicio'));
+  });
 }
 
 function toggleTheme() {
   const isDark = document.body.classList.toggle('dark');
-  setState({ darkMode: isDark });
-  const btn = document.getElementById('btn-theme');
-  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+  setPorterosState({ darkMode: isDark });
+  renderHeader();
+}
+
+function openConfig() {
+  document.dispatchEvent(new CustomEvent('edp:open-config'));
+}
+
+function onSeasonChange(e) {
+  const seasonKey = e.target.value;
+  const season = porterosState.allSeasons?.find(s => s.seasonKey === seasonKey);
+  if (season) {
+    setPorterosState({ activeSeason: season });
+    document.dispatchEvent(new CustomEvent('edp:season-changed', { detail: season }));
+  }
+}
+
+async function onAddSeason() {
+  const input = prompt('Nueva temporada (formato YYYY/YYYY):');
+  if (!input) return;
+  const value = input.trim();
+  if (!/^\d{4}\/\d{4}$/.test(value)) {
+    showError('Formato incorrecto. Usa YYYY/YYYY');
+    return;
+  }
+  if (porterosState.seasons.includes(value)) {
+    showError('Esa temporada ya existe.');
+    return;
+  }
+  setPorterosState({ seasons: [...porterosState.seasons, value] });
+  renderHeader();
 }
