@@ -11,6 +11,7 @@ import { renderTabs, switchTab }           from './render-tabs.js';
 import { renderFooter }                    from './render-footer.js';
 import { renderWeekPlanning }              from './render-week-planning.js';
 import { showError }                       from './utils.js';
+import { renderInicio }                    from './render-inicio.js';
 
 function renderOverlay() {
   if (document.getElementById('porteros-overlay')) return;
@@ -36,7 +37,7 @@ function renderTeamBarContainer() {
 
 function setupEvents() {
   document.addEventListener('porteros:team-changed', () => {
-    if (porterosState.activeTab === 'semana') renderWeekPlanning();
+    if (porterosState.activeTab === 'semana') renderInicio();
   });
 
   document.addEventListener('rm:season-changed', () => {
@@ -93,8 +94,8 @@ async function boot() {
   loadConfig();
 
   setTimeout(() => {
-    if (porterosState.activeTab === 'semana') renderWeekPlanning();
-  }, 600);
+  renderInicio();
+}, 600);
 }
 
 document.addEventListener('DOMContentLoaded', boot);
