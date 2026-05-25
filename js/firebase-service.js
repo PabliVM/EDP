@@ -1,6 +1,6 @@
 // ================================================
-// FIREBASE-SERVICE.JS — Operaciones Firestore
-// Usa CDN ESM. Compatible con Vercel sin bundler.
+// FIREBASE-SERVICE.JS
+// Colecciones prefijadas porteros_
 // SIN fallback local. Si falla, lanza error.
 // ================================================
 
@@ -10,7 +10,6 @@ import {
   collection,
   doc,
   getDoc,
-  getDocs,
   setDoc,
   addDoc,
   updateDoc,
@@ -22,18 +21,15 @@ import {
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-import { firebaseConfig, isFirebaseUnconfigured } from './firebase-config.js';
+import { firebaseConfig } from './firebase-config.js';
+import { FIREBASE_COLLECTIONS, PORTEROS_ICONS } from './porteros-constants.js';
+
+const C = FIREBASE_COLLECTIONS;
 
 let _app = null;
 let _db  = null;
 
-// ── INIT ────────────────────────────────────────
-
 export function initFirebase() {
-  if (isFirebaseUnconfigured()) {
-    console.warn('[Firebase] Credenciales sin configurar. Firestore desactivado.');
-    return false;
-  }
   if (!_app) {
     _app = initializeApp(firebaseConfig);
     _db  = getFirestore(_app);
@@ -42,54 +38,104 @@ export function initFirebase() {
 }
 
 export function getDB() {
-  if (!_db) throw new Error('Firebase no inicializado. Llama a initFirebase() primero.');
+  if (!_db) throw new Error('Firebase no inicializado.');
   return _db;
 }
 
-// ── CRUD BASE ────────────────────────────────────
+// ── TEMPORADAS ────────────────────────────────────
 
-export function listenCollection(collectionName, callback, onError) {
-  const db = getDB();
-  return onSnapshot(
-    collection(db, collectionName),
-    snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+export function listenSeasons(onData, onError) {
+  const q = query(collection(getDB(), C.SEASONS), orderBy('startDate', 'desc'));
+  return onSnapshot(q,
+    snap => onData(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
     err  => onError(err),
   );
 }
 
-export async function saveDocument(collectionName, documentId, data) {
-  const db = getDB();
-  await setDoc(doc(db, collectionName, documentId), {
-    ...data,
-    updatedAt: serverTimestamp(),
-  });
+export async function createSeason(data) {
+  const ref = doc(collection(getDB(), C.SEASONS));
+  await setDoc(ref, { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  return ref.id;
 }
 
-export async function addDocument(collectionName, data) {
-  const db  = getDB();
-  const ref = await addDoc(collection(db, collectionName), {
-    ...data,
+export async function setActiveSeason(id) {
+  const { getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+  const snap = await getDocs(collection(getDB(), C.SEASONS));
+  await Promise.all(snap.docs.map(d =>
+    updateDoc(doc(getDB(), C.SEASONS, d.id), { isActive: d.id === id })
+  ));
+}
+
+// ── SEMANAS ───────────────────────────────────────
+
+export async function upsertWeek(weekData) {
+  const ref  = doc(getDB(), C.WEEKS, weekData.id);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    await updateDoc(ref, { ...weekData, updatedAt: serverTimestamp() });
+  } else {
+    await setDoc(ref, { ...weekData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  }
+}
+
+// ── PLANES DE DÍA ─────────────────────────────────
+
+export function listenWeekPlans(seasonKey, teamKey, weekId, onData, onError) {
+  const q = query(
+    collection(getDB(), C.DAY_PLANS),
+    where('seasonKey', '==', seasonKey),
+    where('teamKey',   '==', teamKey),
+    where('weekId',    '==', weekId),
+  );
+  return onSnapshot(q,
+    snap => onData(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+    err  => onError(err),
+  );
+}
+
+export async function saveDayPlan(dayPlan) {
+  if (dayPlan.id) {
+    const { id, ...data } = dayPlan;
+    await updateDoc(doc(getDB(), C.DAY_PLANS, id), { ...data, updatedAt: serverTimestamp() });
+    return id;
+  }
+  const ref = await addDoc(collection(getDB(), C.DAY_PLANS), {
+    ...dayPlan,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
   return ref.id;
 }
 
-export async function updateDocument(collectionName, documentId, patch) {
-  const db = getDB();
-  await updateDoc(doc(db, collectionName, documentId), {
-    ...patch,
-    updatedAt: serverTimestamp(),
-  });
+export async function updateDayPlan(id, patch) {
+  await updateDoc(doc(getDB(), C.DAY_PLANS, id), { ...patch, updatedAt: serverTimestamp() });
 }
 
-export async function deleteDocument(collectionName, documentId) {
-  const db = getDB();
-  await deleteDoc(doc(db, collectionName, documentId));
+export async function deleteDayPlan(id) {
+  await deleteDoc(doc(getDB(), C.DAY_PLANS, id));
 }
 
-export async function readDocument(collectionName, documentId) {
-  const db   = getDB();
-  const snap = await getDoc(doc(db, collectionName, documentId));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+// ── CONFIGURACIÓN ─────────────────────────────────
+
+export function listenConfig(onData, onError) {
+  return onSnapshot(collection(getDB(), C.CONFIG),
+    snap => {
+      const cfg = {};
+      snap.docs.forEach(d => { cfg[d.id] = d.data(); });
+      onData(cfg);
+    },
+    err => onError(err),
+  );
+}
+
+export async function saveConfigSection(sectionName, data) {
+  await setDoc(doc(getDB(), C.CONFIG, sectionName), { ...data, updatedAt: serverTimestamp() });
+}
+
+export async function initConfigIfEmpty() {
+  const iconsRef  = doc(getDB(), C.CONFIG, 'icons');
+  const iconsSnap = await getDoc(iconsRef);
+  if (!iconsSnap.exists()) {
+    await setDoc(iconsRef, { ...PORTEROS_ICONS, updatedAt: serverTimestamp() });
+  }
 }
