@@ -46,20 +46,24 @@ export function renderWeekPlanning() {
   // ── NAV ──
   const nav = document.createElement('div');
   nav.className = 'week-nav';
-  nav.innerHTML = `
-    <button class="btn btn-ghost btn-icon" id="btn-prev-week">◀</button>
-    <div class="week-nav-info">
-      <div class="week-nav-label">${formatWeekRange(monday)}</div>
-      <div class="week-nav-sub">Microciclo ${microN} · ${porterosState.activeSeason.name || porterosState.activeSeason.seasonKey}</div>
-    </div>
-    <button class="btn btn-ghost" id="btn-today-week">Hoy</button>
-    <button class="btn btn-ghost btn-icon" id="btn-next-week">▶</button>
-  `;
+nav.innerHTML = `
+  <button class="btn btn-ghost btn-sm" id="btn-equipos">← Equipos</button>
+  <button class="btn btn-ghost btn-icon" id="btn-prev-week">◀</button>
+  <div class="week-nav-info">
+    <div class="week-nav-label">${formatWeekRange(monday)}</div>
+    <div class="week-nav-sub">Microciclo ${microN} · ${porterosState.activeSeason.name || porterosState.activeSeason.seasonKey}</div>
+  </div>
+  <button class="btn btn-ghost" id="btn-today-week">Hoy</button>
+  <button class="btn btn-ghost btn-icon" id="btn-next-week">▶</button>
+`;
   panel.appendChild(nav);
 
   document.getElementById('btn-prev-week').addEventListener('click',  () => navigate(-1));
   document.getElementById('btn-next-week').addEventListener('click',  () => navigate(1));
   document.getElementById('btn-today-week').addEventListener('click', () => goToday());
+  document.getElementById('btn-equipos').addEventListener('click', () => {
+  import('./render-inicio.js').then(({ renderInicio }) => renderInicio());
+});
 
   // ── GRID ──
   const grid = document.createElement('div');
