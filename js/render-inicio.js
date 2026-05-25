@@ -6,7 +6,7 @@ import { PORTEROS_TEAMS }                  from './porteros-constants.js';
 import { porterosState, setPorterosState } from './porteros-state.js';
 
 export function renderInicio() {
-  const panel = document.getElementById('tab-semana');
+  const panel = document.getElementById('view-inicio');
   if (!panel) return;
 
   panel.innerHTML = `
