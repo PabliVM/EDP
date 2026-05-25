@@ -271,3 +271,22 @@ async function save() {
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
   }
 }
+
+function buildConceptSelect(idx, block) {
+  const conceptos = porterosState.conceptos || {};
+  const items     = conceptos[block.blockType] || [];
+
+  if (items.length === 0) {
+    return `<textarea class="textarea block-field" data-idx="${idx}" data-field="content"
+      rows="2" placeholder="Sin conceptos definidos en configuración...">${safeText(block.content || '')}</textarea>`;
+  }
+
+  return `
+    <select class="select block-field" data-idx="${idx}" data-field="content">
+      <option value="">— Elegir concepto —</option>
+      ${items.map(item =>
+        `<option value="${safeText(item)}" ${block.content === item ? 'selected' : ''}>${safeText(item)}</option>`
+      ).join('')}
+    </select>
+  `;
+}
