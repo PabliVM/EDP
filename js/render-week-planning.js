@@ -15,7 +15,7 @@ import { showError }                   from './utils.js';
 let _unsubPlans = null;
 
 export function renderWeekPlanning() {
-  const panel = document.getElementById('tab-semana');
+  const panel = document.getElementById('view-semana');
   if (!panel) return;
   panel.innerHTML = '';
 
