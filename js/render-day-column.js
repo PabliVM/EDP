@@ -3,11 +3,11 @@
 // ================================================
 
 import { getDayName, formatDate, toDateKey, getWeekKey, getMondayOfWeek } from './dates.js';
-import { porterosState, setPorterosState } from './porteros-state.js';
-import { DAY_TYPES, BLOCK_TYPES }          from './porteros-constants.js';
-import { saveDayPlan }                     from './firebase-service.js';
-import { openDayEditor }                   from './render-day-editor.js';
-import { showError, safeText }             from './utils.js';
+import { porterosState } from './porteros-state.js';
+import { DAY_TYPES, BLOCK_TYPES } from './porteros-constants.js';
+import { saveDayPlan }            from './firebase-service.js';
+import { openDayEditor }          from './render-day-editor.js';
+import { showError, safeText }    from './utils.js';
 
 export function renderDayColumn(date, plan, isToday = false) {
   const dayType = plan?.dayType || '';
@@ -17,7 +17,6 @@ export function renderDayColumn(date, plan, isToday = false) {
   col.className = 'day-col' + (isToday ? ' today' : '');
   if (dayType) col.dataset.daytype = dayType;
 
-  // ── HEADER ──
   col.innerHTML = `
     <div class="day-header">
       <span class="day-name">${getDayName(date).toUpperCase()}</span>
@@ -41,7 +40,6 @@ export function renderDayColumn(date, plan, isToday = false) {
 
   renderDayBody(col.querySelector('.day-body'), date, plan, dayType, icons);
 
-  // ── BOTÓN EDITAR ──
   const editBtn = document.createElement('button');
   editBtn.className = 'edit-day-btn';
   editBtn.innerHTML = '✏️';
@@ -61,13 +59,13 @@ function renderDayBody(body, date, plan, dayType, icons) {
   }
 
   if (dayType === 'descanso') {
-    body.innerHTML = `<div class="day-special"><span class="day-special-label">DESCANSO</span></div>`;
+    renderSpecialDay(body, 'DESCANSO');
     if (plan?.notes) body.insertAdjacentHTML('beforeend', `<div class="day-info-compact">${safeText(plan.notes)}</div>`);
     return;
   }
 
   if (dayType === 'partido') {
-    body.innerHTML = `<div class="day-special"><span class="day-special-label">PARTIDO</span></div>`;
+    renderSpecialDay(body, 'PARTIDO');
     if (plan?.matchInfo?.rival) {
       const mi = plan.matchInfo;
       body.insertAdjacentHTML('beforeend', `
@@ -82,7 +80,7 @@ function renderDayBody(body, date, plan, dayType, icons) {
   }
 
   if (dayType === 'torneo') {
-    body.innerHTML = `<div class="day-special"><span class="day-special-label">TORNEO</span></div>`;
+    renderSpecialDay(body, 'TORNEO');
     appendAddBtn(body, date, plan, 'Añadir info');
     return;
   }
@@ -96,6 +94,13 @@ function renderDayBody(body, date, plan, dayType, icons) {
     }
     appendAddBtn(body, date, plan, '＋ Añadir bloque');
   }
+}
+
+function renderSpecialDay(body, label) {
+  const wrap = document.createElement('div');
+  wrap.className = 'day-special';
+  wrap.innerHTML = `<span class="day-special-label">${label.split('').join('<br>')}</span>`;
+  body.appendChild(wrap);
 }
 
 function renderBlock(block, icons) {
@@ -116,7 +121,7 @@ function renderBlock(block, icons) {
     </div>
   `;
   wrap.addEventListener('click', () => {
-    import('./render-day-editor.js').then(({ openDayEditor }) => openDayEditor(null, null, block));
+    import('./render-day-editor.js').then(({ openDayEditor }) => openDayEditor(date, plan));
   });
   return wrap;
 }
