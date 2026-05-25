@@ -88,14 +88,16 @@
   justify-content: center;
 }
 .day-special-label {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 900;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  opacity: 0.55;
   color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+  word-break: break-all;
+  writing-mode: horizontal-tb;
+  max-width: 40px;
 }
 .day-col[data-daytype="partido"] .day-special-label { color: var(--rm-gold); }
 .day-col[data-daytype="torneo"]  .day-special-label { color: #a78bfa; }
