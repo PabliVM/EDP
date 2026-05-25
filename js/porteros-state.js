@@ -7,12 +7,15 @@
 import { getMondayOfWeek } from './dates.js';
 
 const _state = {
-  activeTeam:    'JA',
+  activeTeam:    null,
   activeSeason:  null,
+  allSeasons:    [],
+  seasons:       [],
   currentMonday: getMondayOfWeek(new Date()),
-  activeTab:     'semana',
-  icons:         null,
+  currentView:   'inicio',
   darkMode:      false,
+  icons:         null,
+  microciclos:   {},
 };
 
 export const porterosState = _state;
