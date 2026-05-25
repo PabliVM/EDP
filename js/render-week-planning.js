@@ -63,7 +63,7 @@ nav.innerHTML = `
   document.getElementById('btn-today-week').addEventListener('click', () => goToday());
   document.getElementById('btn-equipos').addEventListener('click', () => {
   import('./render-inicio.js').then(({ renderInicio }) => renderInicio());
-});
+   });
 
   // ── GRID ──
   const grid = document.createElement('div');
