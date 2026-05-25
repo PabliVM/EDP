@@ -11,6 +11,7 @@ import { renderFooter }                    from './render-footer.js';
 import { renderWeekPlanning }              from './render-week-planning.js';
 import { renderInicio }                    from './render-inicio.js';
 import { showError }                       from './utils.js';
+import { renderConfig }                     from './render-config-porteros.js';
 
 function renderOverlay() {
   if (document.getElementById('porteros-overlay')) return;
@@ -43,10 +44,11 @@ function setupEvents() {
     if (porterosState.activeTab === 'semana') renderWeekPlanning();
   });
 
-  document.addEventListener('rm:tab-changed', e => {
-    setPorterosState({ activeTab: e.detail });
-    if (e.detail === 'semana') renderInicio();
-  });
+document.addEventListener('rm:tab-changed', e => {
+  setPorterosState({ activeTab: e.detail });
+  if (e.detail === 'semana')        renderInicio();
+  if (e.detail === 'configuracion') renderConfig();
+});
 }
 
 function loadSeasons() {
