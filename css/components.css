@@ -262,4 +262,34 @@
   font-weight: 600;
   margin-bottom: 16px;
 }
+/* ── TEAM BUTTONS ── */
+.team-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 99px;
+  border: 1.5px solid var(--border-emphasis);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--t-fast);
+  flex-shrink: 0;
+}
+.team-btn:hover {
+  border-color: var(--blue-400);
+  color: var(--blue-400);
+  background: var(--bg-hover);
+}
+.team-btn.active {
+  background: var(--blue-500);
+  border-color: var(--blue-500);
+  color: #ffffff;
+}
 
