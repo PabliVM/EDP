@@ -3,6 +3,8 @@
 // ================================================
 
 export const PORTEROS_TEAMS = [
+  { key: 'JA', label: 'CAS', full: 'Castilla'     },
+  { key: 'JA', label: 'RMC', full: 'Real Madrid C'     },
   { key: 'JA', label: 'JA', full: 'Juvenil A'     },
   { key: 'JB', label: 'JB', full: 'Juvenil B'     },
   { key: 'JC', label: 'JC', full: 'Juvenil C'     },
