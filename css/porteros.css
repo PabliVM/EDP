@@ -1,4 +1,226 @@
-/* ── CONFIG PANEL ── */
+/* ── SEMANA GRID ── */
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 12px;
+  flex-wrap: wrap;
+}
+.week-nav-info { flex: 1; min-width: 160px; }
+.week-nav-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.week-nav-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+@media (max-width: 900px) { .week-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 580px) { .week-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.day-col {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  overflow: hidden;
+}
+.day-col.today { border-color: var(--blue-500); }
+.day-col[data-daytype="entrenamiento"] { border-top: 2px solid var(--blue-500); }
+.day-col[data-daytype="partido"]       { border-top: 2px solid var(--rm-gold); }
+.day-col[data-daytype="descanso"]      { border-top: 2px solid var(--border-default); }
+.day-col[data-daytype="torneo"]        { border-top: 2px solid #a78bfa; }
+
+.day-header {
+  padding: 7px 8px 5px;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-raised);
+}
+.day-name { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); display: block; }
+.day-number { font-size: 20px; font-weight: 700; line-height: 1; color: var(--text-primary); display: block; }
+.day-date-full { font-size: 10px; color: var(--text-muted); display: block; }
+.day-col.today .day-number { color: var(--blue-500); }
+
+.day-type-row { padding: 5px 6px; border-bottom: 1px solid var(--border-subtle); }
+.day-type-select {
+  width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 18px 3px 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath fill='%238b949e' d='M0 0l4 5 4-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  outline: none;
+  cursor: pointer;
+}
+
+.day-body {
+  flex: 1;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.day-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  text-align: center;
+  padding: 12px 6px;
+}
+
+.day-special {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.day-special-label {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+  word-break: break-all;
+  writing-mode: horizontal-tb;
+  max-width: 40px;
+}
+.day-col[data-daytype="partido"] .day-special-label { color: var(--rm-gold); }
+.day-col[data-daytype="torneo"]  .day-special-label { color: #a78bfa; }
+
+.day-info-compact {
+  padding: 5px 7px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.training-block {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 7px;
+  cursor: pointer;
+}
+.training-block:hover { border-color: var(--blue-400); }
+.training-block-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.training-block-icon { width: 20px; height: 20px; object-fit: contain; }
+.training-block-name { font-size: 10px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; flex: 1; }
+.training-block-content { font-size: 10px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
+.training-block-meta { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+
+.add-block-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+.add-block-btn:hover { border-color: var(--blue-400); color: var(--blue-400); }
+
+.edit-day-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  opacity: 0;
+}
+.day-col { position: relative; }
+.day-col:hover .edit-day-btn { opacity: 1; }
+
+/* ── MODAL ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px 12px;
+  overflow-y: auto;
+}
+.overlay.hidden { display: none !important; }
+.modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 100%;
+  padding: 20px;
+  box-shadow: var(--shadow-lg);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-default);
+}
+.modal-title { font-size: 14px; font-weight: 700; }
+.modal-close {
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent;
+  color: var(--text-muted); cursor: pointer; font-size: 16px;
+  border-radius: var(--radius-sm);
+}
+.modal-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-default);
+}
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}/* ── CONFIG PANEL ── */
 .config-overlay {
   position: fixed;
   inset: 0;
