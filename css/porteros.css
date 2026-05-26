@@ -18,8 +18,8 @@
 .week-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 10px;
-  padding: 0 250px;
+  gap: clamp(4px, 0.8vw, 12px);
+  padding: 0 clamp(8px, 6vw, 120px);
   max-width: 100%;
   margin: 0 auto;
 }
@@ -32,7 +32,7 @@
   border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
-  min-height: 700px;
+  min-height: clamp(300px, 62vh, 820px);
   overflow: hidden;
   position: relative;
 }
@@ -47,17 +47,15 @@
   border-bottom: 1px solid var(--border-default);
   background: var(--bg-raised);
 }
-.day-name { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); display: block; }
-.day-number { font-size: 26px; font-weight: 700; line-height: 1; color: var(--text-primary); display: block; }
-.day-date-full { font-size: 11px; color: var(--text-muted); display: block; }
-.training-block-name { font-size: 11px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; flex: 1; }
-.training-block-content { font-size: 11px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
-.add-block-btn { font-size: 11px; font-weight: 600; }
+.day-name     { font-size: clamp(9px, 0.9vw, 13px); font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); display: block; }
+.day-number   { font-size: clamp(18px, 2.2vw, 32px); font-weight: 700; line-height: 1; color: var(--text-primary); display: block; }
+.day-date-full { font-size: clamp(9px, 0.8vw, 12px); color: var(--text-muted); display: block; }
+.day-col.today .day-number { color: var(--blue-500); }
 
 .day-type-row { padding: 5px 6px; border-bottom: 1px solid var(--border-subtle); }
 .day-type-select {
   width: 100%;
-  font-size: 10px;
+  font-size: clamp(9px, 0.8vw, 13px);
   font-weight: 700;
   padding: 3px 18px 3px 6px;
   background: var(--bg-raised);
@@ -74,10 +72,10 @@
 
 .day-body {
   flex: 1;
-  padding: 10px;
+  padding: clamp(6px, 1vw, 12px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: clamp(5px, 0.8vw, 10px);
   justify-content: center;
 }
 
@@ -86,7 +84,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: clamp(9px, 0.9vw, 12px);
   color: var(--text-muted);
   opacity: 0.5;
   text-align: center;
@@ -100,7 +98,7 @@
   justify-content: center;
 }
 .day-special-label {
-  font-size: 35px;
+  font-size: clamp(16px, 2.5vw, 38px);
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -113,7 +111,7 @@
 
 .day-info-compact {
   padding: 5px 7px;
-  font-size: 11px;
+  font-size: clamp(9px, 0.9vw, 12px);
   color: var(--text-secondary);
   line-height: 1.5;
 }
@@ -122,21 +120,20 @@
   background: var(--bg-raised);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 6px 7px;
+  padding: clamp(6px, 1vw, 12px);
   cursor: pointer;
 }
 .training-block:hover { border-color: var(--blue-400); }
 .training-block-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
+  gap: clamp(5px, 0.8vw, 10px);
+  margin-bottom: clamp(3px, 0.5vw, 6px);
 }
-.training-block-icon { width: 36px; height: 36px; object-fit: contain; }
-.training-block-name { font-size: 16px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; flex: 1; }
-.training-block-content { font-size: 14px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
-.training-block { padding: 10px 12px; }
-.training-block-header { gap: 10px; margin-bottom: 6px; }
+.training-block-icon    { width: clamp(20px, 2.5vw, 36px); height: clamp(20px, 2.5vw, 36px); object-fit: contain; }
+.training-block-name    { font-size: clamp(10px, 1.1vw, 16px); font-weight: 700; color: var(--text-primary); text-transform: uppercase; flex: 1; }
+.training-block-content { font-size: clamp(9px, 0.9vw, 14px); color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+.training-block-meta    { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
 
 .add-block-btn {
   display: flex;
@@ -148,7 +145,7 @@
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: clamp(9px, 0.9vw, 13px);
   font-weight: 600;
   cursor: pointer;
   width: 100%;
@@ -232,7 +229,9 @@
   letter-spacing: 0.07em;
   color: var(--text-muted);
   margin-bottom: 8px;
-}/* ── CONFIG PANEL ── */
+}
+
+/* ── CONFIG PANEL ── */
 .config-overlay {
   position: fixed;
   inset: 0;
@@ -318,6 +317,7 @@
   flex-shrink: 0;
 }
 .btn-header-icon:hover { background: rgba(255,255,255,0.1); }
+
 /* ── CONFIG PANEL TABS ── */
 .config-tab-btn {
   padding: 8px 16px;
