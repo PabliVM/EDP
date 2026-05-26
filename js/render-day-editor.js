@@ -1,12 +1,12 @@
 // ================================================
-// RENDER-DAY-EDITOR.JS — Modal edición de día
+// RENDER-DAY-EDITOR.JS
 // ================================================
 
-import { porterosState }                    from './porteros-state.js';
+import { porterosState }        from './porteros-state.js';
 import { getDayName, formatDate, toDateKey, getWeekKey, getMondayOfWeek } from './dates.js';
-import { saveDayPlan }                      from './firebase-service.js';
+import { saveDayPlan }          from './firebase-service.js';
 import { BLOCK_TYPES, DAY_TYPES, INTENSIDADES, IMPACTOS, STATUS_OPTIONS } from './porteros-constants.js';
-import { showError, safeText }              from './utils.js';
+import { showError, safeText }  from './utils.js';
 
 let _plan = null;
 let _date = null;
@@ -15,6 +15,18 @@ export function openDayEditor(date, plan) {
   _date = date;
   _plan = plan ? JSON.parse(JSON.stringify(plan)) : buildEmpty(date);
   renderModal();
+  document.getElementById('porteros-overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+export function openBlockEditor(date, plan, blockIdx) {
+  _date = date;
+  _plan = plan ? JSON.parse(JSON.stringify(plan)) : buildEmpty(date);
+  renderModal();
+  setTimeout(() => {
+    const blockCard = document.querySelector(`[data-block-card="${blockIdx}"]`);
+    if (blockCard) blockCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
   document.getElementById('porteros-overlay').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -45,7 +57,7 @@ function buildEmpty(date) {
 }
 
 function renderModal() {
-  const modal  = document.getElementById('porteros-modal');
+  const modal   = document.getElementById('porteros-modal');
   const dayType = _plan?.dayType || '';
 
   modal.innerHTML = `
@@ -53,7 +65,6 @@ function renderModal() {
       <div class="modal-title">${getDayName(_date)}, ${formatDate(_date)}</div>
       <button class="modal-close" id="editor-close">✕</button>
     </div>
-
     <div class="field-group mb-12">
       <label class="label">Tipo de día</label>
       <select class="select" id="editor-day-type">
@@ -63,14 +74,11 @@ function renderModal() {
         ).join('')}
       </select>
     </div>
-
     <div id="editor-dynamic"></div>
-
     <div class="field-group mb-12">
       <label class="label">Notas</label>
       <textarea class="textarea" id="editor-notes" rows="2">${_plan?.notes || ''}</textarea>
     </div>
-
     <div class="field-group mb-12">
       <label class="label">Estado</label>
       <select class="select" id="editor-status">
@@ -79,7 +87,6 @@ function renderModal() {
         ).join('')}
       </select>
     </div>
-
     <div class="modal-footer">
       <button class="btn btn-ghost" id="editor-cancel">Cancelar</button>
       <button class="btn btn-primary" id="editor-save">Guardar</button>
@@ -109,53 +116,32 @@ function renderDynamic() {
   else if (dt === 'torneo')   renderTorneo(section);
 }
 
-// ── ENTRENAMIENTO ──────────────────────────────────
 function renderTraining(section) {
-  const icons = porterosState.icons || {};
-
   section.innerHTML = `
     <div class="section-title mb-8">Bloques</div>
     <div id="blocks-list"></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
       ${BLOCK_TYPES.map(bt => `
-        <button class="btn btn-ghost text-sm" data-add="${bt.key}">
-          + ${bt.label}
-        </button>
+        <button class="btn btn-ghost text-sm" data-add="${bt.key}">+ ${bt.label}</button>
       `).join('')}
     </div>
   `;
-
   renderBlocks();
-
   section.querySelectorAll('[data-add]').forEach(btn => {
     btn.addEventListener('click', () => addBlock(btn.dataset.add));
   });
 }
 
-function renderBlock(block, icons, date, plan) {
-  const def     = BLOCK_TYPES.find(b => b.key === block.blockType);
-  const iconSrc = icons[def?.iconKey] || '';
-  const label   = def?.label || block.blockType;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'training-block';
-  wrap.innerHTML = `
-    <div class="training-block-header">
-      ${iconSrc ? `<img src="${safeText(iconSrc)}" class="training-block-icon" />` : ''}
-      <span class="training-block-name">${safeText(label)}</span>
-    </div>
-    ${block.content ? `<div class="training-block-content">${safeText(block.content)}</div>` : ''}
-    <div class="training-block-meta">
-      ${block.intensidad ? `<span class="badge badge-${block.intensidad.toLowerCase()}">${block.intensidad}</span>` : ''}
-    </div>
-  `;
-wrap.addEventListener('click', () => {
-  import('./render-day-editor.js').then(({ openBlockEditor }) => {
-    const blockIdx = plan?.blocks?.indexOf(block) ?? -1;
-    openBlockEditor(date, plan, blockIdx);
-  });
-});
-  return wrap;
+function renderBlocks() {
+  const list   = document.getElementById('blocks-list');
+  if (!list) return;
+  const blocks = _plan.blocks || [];
+  if (blocks.length === 0) {
+    list.innerHTML = `<div class="text-muted text-sm mb-8">Sin bloques.</div>`;
+    return;
+  }
+  list.innerHTML = '';
+  blocks.forEach((block, idx) => list.appendChild(renderBlockEditor(block, idx)));
 }
 
 function renderBlockEditor(block, idx) {
@@ -167,14 +153,14 @@ function renderBlockEditor(block, idx) {
   card.dataset.blockCard = idx;
   card.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <span class="fw-700" style="font-size:12px;flex:1;">${safeText(label)}</span>
+      <span class="fw-700" style="font-size:13px;flex:1;">${safeText(label)}</span>
       <button class="btn btn-ghost btn-sm" data-remove="${idx}">✕</button>
-
-<div class="field-group">
-  <label class="label">Contenido</label>
-  ${buildConceptSelect(idx, block)}
-</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+    </div>
+    <div class="field-group mb-8">
+      <label class="label">Contenido</label>
+      ${buildConceptSelect(idx, block)}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <div class="field-group">
         <label class="label">Intensidad</label>
         <select class="select block-field" data-idx="${idx}" data-field="intensidad">
@@ -210,7 +196,6 @@ function addBlock(blockType) {
   renderBlocks();
 }
 
-// ── PARTIDO ────────────────────────────────────────
 function renderMatch(section) {
   const mi = _plan.matchInfo || {};
   section.innerHTML = `
@@ -241,7 +226,6 @@ function renderMatch(section) {
   });
 }
 
-// ── TORNEO ─────────────────────────────────────────
 function renderTorneo(section) {
   const ti = _plan.tournamentInfo || {};
   section.innerHTML = `
@@ -263,7 +247,6 @@ function renderTorneo(section) {
   });
 }
 
-// ── GUARDAR ────────────────────────────────────────
 async function save() {
   _plan.notes  = document.getElementById('editor-notes')?.value  || '';
   _plan.status = document.getElementById('editor-status')?.value || 'borrador';
@@ -302,15 +285,4 @@ function buildConceptSelect(idx, block) {
       ).join('')}
     </select>
   `;
-}
-export function openBlockEditor(date, plan, blockIdx) {
-  _date = date;
-  _plan = plan ? JSON.parse(JSON.stringify(plan)) : buildEmpty(date);
-  renderModal();
-  setTimeout(() => {
-    const blockCard = document.querySelector(`[data-block-card="${blockIdx}"]`);
-    if (blockCard) blockCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 100);
-  document.getElementById('porteros-overlay').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
 }
