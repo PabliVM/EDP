@@ -16,6 +16,9 @@ let _unsubSeas  = null;
 let _unsubCfg   = null;
 let _activeTab  = 'temporadas';
 
+// Solo estos bloques tienen conceptos editables
+const BLOQUES_CON_CONCEPTOS = ['preparacion_fisica', 'entrenamiento_campo'];
+
 export function openConfigPanel() {
   const overlay = document.getElementById('config-panel-overlay');
   const panel   = document.getElementById('config-panel');
@@ -71,7 +74,6 @@ function renderPanelContent(panel) {
   renderTabTemporadas();
   renderTabConceptos();
 
-  // Escuchar Firebase
   if (_unsubSeas) _unsubSeas();
   _unsubSeas = listenSeasons(
     seasons => { _seasons = seasons; renderSeasonsList(); },
@@ -279,31 +281,36 @@ function renderConceptosList() {
   const list = document.getElementById('cp-conceptos-list');
   if (!list) return;
 
-  list.innerHTML = BLOCK_TYPES.map(block => {
-    const items = (_conceptos[block.key] || []).join('\n');
-    return `
-      <div class="mb-12">
-        <label class="label">${safeText(block.label)}</label>
-        <textarea class="textarea" id="cp-conceptos-${block.key}"
-          rows="4"
-          placeholder="Un concepto por línea..."
-          style="font-size:12px;">${safeText(items)}</textarea>
-        <div class="text-xs text-muted" style="margin-top:3px;">Un concepto por línea</div>
-      </div>
-    `;
-  }).join('');
+  list.innerHTML = BLOCK_TYPES
+    .filter(block => BLOQUES_CON_CONCEPTOS.includes(block.key))
+    .map(block => {
+      const items = (_conceptos[block.key] || []).join('\n');
+      return `
+        <div class="mb-12">
+          <label class="label">${safeText(block.label)}</label>
+          <textarea class="textarea" id="cp-conceptos-${block.key}"
+            rows="4"
+            placeholder="Un concepto por línea..."
+            style="font-size:12px;">${safeText(items)}</textarea>
+          <div class="text-xs text-muted" style="margin-top:3px;">Un concepto por línea</div>
+        </div>
+      `;
+    }).join('');
 }
 
 async function saveConceptos() {
   const conceptos = {};
-  BLOCK_TYPES.forEach(block => {
-    const textarea = document.getElementById(`cp-conceptos-${block.key}`);
-    if (!textarea) return;
-    conceptos[block.key] = textarea.value
-      .split('\n')
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-  });
+
+  BLOCK_TYPES
+    .filter(block => BLOQUES_CON_CONCEPTOS.includes(block.key))
+    .forEach(block => {
+      const textarea = document.getElementById(`cp-conceptos-${block.key}`);
+      if (!textarea) return;
+      conceptos[block.key] = textarea.value
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+    });
 
   const btn = document.getElementById('cp-btn-save-conceptos');
   btn.disabled = true;
@@ -318,3 +325,4 @@ async function saveConceptos() {
     btn.disabled = false;
   }
 }
+
