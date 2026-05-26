@@ -12,9 +12,11 @@
 
 .week-grid {
   display: grid;
-  grid-template-columns: repeat(20, 1fr);
-  gap: 8px;
-  padding: 0 60px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  padding: 0 40px;
+  max-width: 1600px;
+  margin: 0 auto;
 }
 @media (max-width: 900px) { .week-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 580px) { .week-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -25,8 +27,9 @@
   border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
-  min-height: 320px;
+  min-height: 700px;
   overflow: hidden;
+  position: relative;
 }
 .day-col.today { border-color: var(--blue-500); }
 .day-col[data-daytype="entrenamiento"] { border-top: 2px solid var(--blue-500); }
