@@ -11,7 +11,6 @@ import { showError, safeText }  from './utils.js';
 let _plan = null;
 let _date = null;
 
-// ── ABRIR EDITOR COMPLETO (lápiz) ────────────────
 export function openDayEditor(date, plan) {
   _date = date;
   _plan = plan ? JSON.parse(JSON.stringify(plan)) : buildEmpty(date);
@@ -20,7 +19,6 @@ export function openDayEditor(date, plan) {
   document.body.style.overflow = 'hidden';
 }
 
-// ── ABRIR EDITOR DE UN BLOQUE SOLO (click ficha) ─
 export function openSingleBlockEditor(date, plan, blockIdx) {
   _date = date;
   _plan = plan ? JSON.parse(JSON.stringify(plan)) : buildEmpty(date);
@@ -29,7 +27,6 @@ export function openSingleBlockEditor(date, plan, blockIdx) {
   document.body.style.overflow = 'hidden';
 }
 
-// ── ABRIR EDITOR COMPLETO CON SCROLL (openBlockEditor legacy) ─
 export function openBlockEditor(date, plan, blockIdx) {
   openDayEditor(date, plan);
 }
@@ -59,7 +56,6 @@ function buildEmpty(date) {
   };
 }
 
-// ── MODAL COMPLETO (lápiz) ────────────────────────
 function renderModal() {
   const modal   = document.getElementById('porteros-modal');
   const dayType = _plan?.dayType || '';
@@ -103,7 +99,6 @@ function renderModal() {
   renderDynamic();
 }
 
-// ── MODAL BLOQUE INDIVIDUAL (click ficha) ─────────
 function renderSingleBlockModal(blockIdx) {
   const modal = document.getElementById('porteros-modal');
   const block = _plan.blocks?.[blockIdx];
@@ -122,23 +117,23 @@ function renderSingleBlockModal(blockIdx) {
         letter-spacing:0.05em;margin-bottom:14px;color:var(--text-primary);">
         ${safeText(label)}
       </div>
-      <div class="field-group mb-10">
+      <div class="field-group mb-12">
         <label class="label">Contenido</label>
         ${buildConceptSelect(blockIdx, block)}
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="field-group">
-          <label class="label">Intensidad</label>
-          <select class="select block-field" data-idx="${blockIdx}" data-field="intensidad">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:13px;font-weight:700;min-width:100px;">INTENSIDAD:</span>
+          <select class="select block-field" data-idx="${blockIdx}" data-field="intensidad" style="flex:1;">
             <option value="">—</option>
             ${INTENSIDADES.map(i => `<option value="${i}" ${block.intensidad === i ? 'selected' : ''}>${i}</option>`).join('')}
           </select>
         </div>
-        <div class="field-group">
-          <label class="label">Impactos</label>
-          <select class="select block-field" data-idx="${blockIdx}" data-field="impactos">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:13px;font-weight:700;min-width:100px;">IMPACTOS:</span>
+          <select class="select block-field" data-idx="${blockIdx}" data-field="impactos" style="flex:1;">
             <option value="">—</option>
-            ${INTENSIDADES.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
+            ${IMPACTOS.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -217,19 +212,19 @@ function renderBlockEditor(block, idx) {
       <label class="label">Contenido</label>
       ${buildConceptSelect(idx, block)}
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <div class="field-group">
-        <label class="label">Intensidad</label>
-        <select class="select block-field" data-idx="${idx}" data-field="intensidad">
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;font-weight:700;min-width:100px;">INTENSIDAD:</span>
+        <select class="select block-field" data-idx="${idx}" data-field="intensidad" style="flex:1;">
           <option value="">—</option>
           ${INTENSIDADES.map(i => `<option value="${i}" ${block.intensidad === i ? 'selected' : ''}>${i}</option>`).join('')}
         </select>
       </div>
-      <div class="field-group">
-        <label class="label">Impactos</label>
-        <select class="select block-field" data-idx="${idx}" data-field="impactos">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;font-weight:700;min-width:100px;">IMPACTOS:</span>
+        <select class="select block-field" data-idx="${idx}" data-field="impactos" style="flex:1;">
           <option value="">—</option>
-          ${INTENSIDADES.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
+          ${IMPACTOS.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
         </select>
       </div>
     </div>
