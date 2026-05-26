@@ -24,23 +24,30 @@
   margin: 0 auto;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .week-grid {
-    grid-template-columns: repeat(7, minmax(220px, 1fr));
+    grid-template-columns: repeat(7, minmax(160px, 1fr));
     overflow-x: auto;
-    padding: 0 12px;
+    padding: 0 8px;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
   }
   .day-col {
     scroll-snap-align: start;
+    min-width: 160px;
   }
+  .training-block-name { font-size: 11px; }
+  .training-block-content { font-size: 10px; }
+  .training-block-icon { width: 20px; height: 20px; }
 }
 
 @media (max-width: 580px) {
   .week-grid {
-    grid-template-columns: repeat(7, minmax(85vw, 1fr));
-    padding: 0 8px;
+    grid-template-columns: repeat(7, 47vw);
+    padding: 0 4px;
+  }
+  .day-col {
+    min-width: 47vw;
   }
 }
 
