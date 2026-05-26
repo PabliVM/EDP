@@ -74,10 +74,11 @@
 
 .day-body {
   flex: 1;
-  padding: 6px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
+  justify-content: center;
 }
 
 .day-empty {
