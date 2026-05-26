@@ -106,6 +106,7 @@ function renderSingleBlockModal(blockIdx) {
 
   const def   = BLOCK_TYPES.find(b => b.key === block.blockType);
   const label = def?.label || block.blockType;
+  const isCampo = block.blockType === 'entrenamiento_campo';
 
   modal.innerHTML = `
     <div class="modal-header">
@@ -121,22 +122,24 @@ function renderSingleBlockModal(blockIdx) {
         <label class="label">Contenido</label>
         ${buildConceptSelect(blockIdx, block)}
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <span style="font-size:13px;font-weight:700;min-width:100px;">INTENSIDAD:</span>
-          <select class="select block-field" data-idx="${blockIdx}" data-field="intensidad" style="flex:1;">
-            <option value="">—</option>
-            ${INTENSIDADES.map(i => `<option value="${i}" ${block.intensidad === i ? 'selected' : ''}>${i}</option>`).join('')}
-          </select>
+      ${isCampo ? `
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:13px;font-weight:700;min-width:100px;">INTENSIDAD:</span>
+            <select class="select block-field" data-idx="${blockIdx}" data-field="intensidad" style="flex:1;">
+              <option value="">—</option>
+              ${INTENSIDADES.map(i => `<option value="${i}" ${block.intensidad === i ? 'selected' : ''}>${i}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:13px;font-weight:700;min-width:100px;">IMPACTOS:</span>
+            <select class="select block-field" data-idx="${blockIdx}" data-field="impactos" style="flex:1;">
+              <option value="">—</option>
+              ${IMPACTOS.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
+            </select>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <span style="font-size:13px;font-weight:700;min-width:100px;">IMPACTOS:</span>
-          <select class="select block-field" data-idx="${blockIdx}" data-field="impactos" style="flex:1;">
-            <option value="">—</option>
-            ${IMPACTOS.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
-          </select>
-        </div>
-      </div>
+      ` : ''}
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="editor-cancel">Cancelar</button>
@@ -195,8 +198,9 @@ function renderBlocks() {
 }
 
 function renderBlockEditor(block, idx) {
-  const def   = BLOCK_TYPES.find(b => b.key === block.blockType);
-  const label = def?.label || block.blockType;
+  const def     = BLOCK_TYPES.find(b => b.key === block.blockType);
+  const label   = def?.label || block.blockType;
+  const isCampo = block.blockType === 'entrenamiento_campo';
 
   const card = document.createElement('div');
   card.className = 'card card-sm mb-8';
@@ -212,22 +216,24 @@ function renderBlockEditor(block, idx) {
       <label class="label">Contenido</label>
       ${buildConceptSelect(idx, block)}
     </div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <span style="font-size:13px;font-weight:700;min-width:100px;">INTENSIDAD:</span>
-        <select class="select block-field" data-idx="${idx}" data-field="intensidad" style="flex:1;">
-          <option value="">—</option>
-          ${INTENSIDADES.map(i => `<option value="${i}" ${block.intensidad === i ? 'selected' : ''}>${i}</option>`).join('')}
-        </select>
+    ${isCampo ? `
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:13px;font-weight:700;min-width:100px;">INTENSIDAD:</span>
+          <select class="select block-field" data-idx="${idx}" data-field="intensidad" style="flex:1;">
+            <option value="">—</option>
+            ${INTENSIDADES.map(i => `<option value="${i}" ${block.intensidad === i ? 'selected' : ''}>${i}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:13px;font-weight:700;min-width:100px;">IMPACTOS:</span>
+          <select class="select block-field" data-idx="${idx}" data-field="impactos" style="flex:1;">
+            <option value="">—</option>
+            ${IMPACTOS.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
+          </select>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <span style="font-size:13px;font-weight:700;min-width:100px;">IMPACTOS:</span>
-        <select class="select block-field" data-idx="${idx}" data-field="impactos" style="flex:1;">
-          <option value="">—</option>
-          ${IMPACTOS.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
-        </select>
-      </div>
-    </div>
+    ` : ''}
   `;
 
   card.querySelectorAll('.block-field').forEach(f => {
