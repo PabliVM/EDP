@@ -361,3 +361,74 @@
   color: var(--blue-500);
   border-bottom-color: var(--blue-500);
 }
+/* ── INICIO ── */
+.inicio-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px 24px;
+  text-align: center;
+}
+.inicio-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 12px;
+}
+.inicio-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.inicio-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.equipos-section {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 20px 32px;
+}
+.equipos-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.equipos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+.equipo-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 16px 10px;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow-sm);
+}
+.equipo-card:hover {
+  border-color: var(--blue-400);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.equipo-card.active {
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+.equipo-card-key {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.equipo-card-full {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
