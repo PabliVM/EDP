@@ -78,6 +78,30 @@ export async function upsertWeek(weekData) {
   }
 }
 
+// ── MICROCICLO POR SEMANA Y EQUIPO ────────────────
+// Guarda un número de microciclo manual para una semana+equipo concretos
+// docId: `{seasonKey}_{teamKey}_{weekId}`
+
+export async function saveWeekMicro(seasonKey, teamKey, weekId, microNumber) {
+  const id  = `${seasonKey}_${teamKey}_${weekId}`;
+  const ref = doc(getDB(), 'porteros_week_micros', id);
+  await setDoc(ref, {
+    seasonKey,
+    teamKey,
+    weekId,
+    microNumber,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function getWeekMicro(seasonKey, teamKey, weekId) {
+  const id   = `${seasonKey}_${teamKey}_${weekId}`;
+  const ref  = doc(getDB(), 'porteros_week_micros', id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  return snap.data().microNumber ?? null;
+}
+
 // ── PLANES DE DÍA ─────────────────────────────────
 
 export function listenWeekPlans(seasonKey, teamKey, weekId, onData, onError) {
@@ -139,3 +163,8 @@ export async function initConfigIfEmpty() {
     await setDoc(iconsRef, { ...PORTEROS_ICONS, updatedAt: serverTimestamp() });
   }
 }
+
+export async function deleteDocument(collectionName, id) {
+  await deleteDoc(doc(getDB(), collectionName, id));
+}
+
