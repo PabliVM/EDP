@@ -468,3 +468,40 @@
     max-width: calc(100vw - 120px);
   }
 }
+/* ── PRINT ── */
+@media print {
+  #rm-header,
+  #rm-team-bar,
+  #rm-team-bar-container,
+  #rm-footer,
+  .week-nav,
+  .day-type-row,
+  .add-block-btn,
+  .add-info-btn,
+  .edit-day-btn,
+  .no-print,
+  .print-hidden,
+  button,
+  select,
+  input,
+  textarea {
+    display: none !important;
+  }
+
+  .week-grid {
+    grid-template-columns: repeat(7, 1fr) !important;
+    padding: 0 !important;
+    gap: 4px !important;
+    overflow: visible !important;
+  }
+
+  .day-col {
+    min-height: 160px !important;
+    break-inside: avoid;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+}
