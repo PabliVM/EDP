@@ -120,12 +120,15 @@ function renderBlock(block, icons, date, plan) {
       ${block.intensidad ? `<span class="badge badge-${block.intensidad.toLowerCase()}">${block.intensidad}</span>` : ''}
     </div>
   `;
+
   wrap.addEventListener('click', () => {
+    if (block.blockType === 'informe_micro' || block.blockType === 'video_analisis') return;
     const blockIdx = plan?.blocks?.findIndex(b =>
       b.blockType === block.blockType && b.content === block.content
     ) ?? -1;
     openSingleBlockEditor(date, plan, blockIdx);
   });
+
   return wrap;
 }
 
