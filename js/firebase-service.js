@@ -83,7 +83,7 @@ export async function upsertWeek(weekData) {
 // docId: `{seasonKey}_{teamKey}_{weekId}`
 
 export async function saveWeekMicro(seasonKey, teamKey, weekId, microNumber) {
-  const id  = `${seasonKey}_${teamKey}_${weekId}`;
+  const id  = `${seasonKey.replace(/\//g, '-')}_${teamKey}_${weekId}`;
   const ref = doc(getDB(), 'porteros_week_micros', id);
   await setDoc(ref, {
     seasonKey,
@@ -95,7 +95,7 @@ export async function saveWeekMicro(seasonKey, teamKey, weekId, microNumber) {
 }
 
 export async function getWeekMicro(seasonKey, teamKey, weekId) {
-  const id   = `${seasonKey}_${teamKey}_${weekId}`;
+  const id   = `${seasonKey.replace(/\//g, '-')}_${teamKey}_${weekId}`;
   const ref  = doc(getDB(), 'porteros_week_micros', id);
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
