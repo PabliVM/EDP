@@ -432,3 +432,8 @@
   font-size: 11px;
   color: var(--text-secondary);
 }
+#rm-header .header-logo img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
