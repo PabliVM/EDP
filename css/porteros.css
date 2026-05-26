@@ -450,3 +450,10 @@
     display: none;
   }
 }
+@media (max-width: 580px) {
+  .btn-header-action,
+  .season-select,
+  .btn-season-add {
+    display: none;
+  }
+}
