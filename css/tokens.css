@@ -66,15 +66,15 @@
 /* ── MODO OSCURO ── */
 body.dark {
   --bg-app:      #0d1117;
-  --bg-surface:  #161b22;
-  --bg-raised:   #1c2333;
-  --bg-hover:    #262d3a;
+  --bg-surface:  #1c2333;
+  --bg-raised:   #262d3a;
+  --bg-hover:    #2d3748;
   --text-primary:   #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted:     #6e7681;
-  --border-default:  #30363d;
-  --border-subtle:   #21262d;
-  --border-emphasis: #3d444d;
+  --text-secondary: #c9d1d9;
+  --text-muted:     #8b949e;
+  --border-default:  #3d444d;
+  --border-subtle:   #30363d;
+  --border-emphasis: #4d5566;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.6);
