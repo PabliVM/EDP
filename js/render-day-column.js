@@ -103,7 +103,7 @@ function renderSpecialDay(body, label) {
   body.appendChild(wrap);
 }
 
-function renderBlock(block, icons) {
+function renderBlock(block, icons, date, plan) {
   const def     = BLOCK_TYPES.find(b => b.key === block.blockType);
   const iconSrc = icons[def?.iconKey] || '';
   const label   = def?.label || block.blockType;
@@ -120,9 +120,12 @@ function renderBlock(block, icons) {
       ${block.intensidad ? `<span class="badge badge-${block.intensidad.toLowerCase()}">${block.intensidad}</span>` : ''}
     </div>
   `;
-  wrap.addEventListener('click', () => {
-    import('./render-day-editor.js').then(({ openDayEditor }) => openDayEditor(date, plan));
+wrap.addEventListener('click', () => {
+  import('./render-day-editor.js').then(({ openBlockEditor }) => {
+    const blockIdx = plan?.blocks?.findIndex(b => b === block || (b.blockType === block.blockType && b.content === block.content)) ?? -1;
+    openBlockEditor(date, plan, blockIdx);
   });
+});
   return wrap;
 }
 
