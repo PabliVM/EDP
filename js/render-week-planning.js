@@ -62,7 +62,7 @@ document.getElementById('btn-prev-week').addEventListener('click',  () => naviga
 document.getElementById('btn-next-week').addEventListener('click',  () => navigate(1));
 document.getElementById('btn-today-week').addEventListener('click', () => goToday());
 document.getElementById('btn-equipos').addEventListener('click', () => {
-  import('./render-inicio.js').then(({ renderInicio }) => renderInicio());
+  document.dispatchEvent(new CustomEvent('edp:go-inicio'));
 });
 
   // ── GRID ──
