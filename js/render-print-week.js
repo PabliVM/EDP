@@ -2,10 +2,10 @@
 // RENDER-PRINT-WEEK.JS — Impresión semanal
 // ================================================
 
-import { porterosState }           from './porteros-state.js';
-import { BLOCK_TYPES }             from './porteros-constants.js';
+import { porterosState }                from './porteros-state.js';
+import { BLOCK_TYPES, PORTEROS_TEAMS }  from './porteros-constants.js';
 import { getWeekDays, formatWeekRange, getMicroNumber, toDateKey, getDayName } from './dates.js';
-import { safeText }                from './utils.js';
+import { safeText }                     from './utils.js';
 
 export function printWeek() {
   const monday  = porterosState.currentMonday;
@@ -18,11 +18,12 @@ export function printWeek() {
     return;
   }
 
-  const days   = getWeekDays(monday);
-  const microN = getMicroNumber(monday, season.startDate);
-  const plans  = window.__edpWeekPlans || {};
+  const days     = getWeekDays(monday);
+  const microN   = getMicroNumber(monday, season.startDate);
+  const plans    = window.__edpWeekPlans || {};
+  const teamFull = PORTEROS_TEAMS.find(t => t.key === team)?.full || team;
 
-  const html = buildPrintHTML({ days, plans, season, team, microN, monday, icons });
+  const html = buildPrintHTML({ days, plans, season, team, teamFull, microN, monday, icons });
 
   const win = window.open('', '_blank');
   win.document.write(html);
@@ -31,7 +32,7 @@ export function printWeek() {
   setTimeout(() => { win.print(); }, 500);
 }
 
-function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
+function buildPrintHTML({ days, plans, season, team, teamFull, microN, monday, icons }) {
   const weekLabel = formatWeekRange(monday);
   const logoSrc   = icons.logo || './rm.png';
 
@@ -45,7 +46,7 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Planificación EDP — ${safeText(team)} — ${safeText(weekLabel)}</title>
+  <title>Planificación EDP — ${safeText(teamFull)} — ${safeText(weekLabel)}</title>
   <style>
     @page {
       size: A4 landscape;
@@ -80,8 +81,8 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       margin-bottom: 10px;
     }
     .print-header-logo {
-      width: 44px;
-      height: 44px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       background: rgba(255,255,255,0.9) !important;
       -webkit-print-color-adjust: exact;
@@ -94,8 +95,8 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       flex-shrink: 0;
     }
     .print-header-logo img {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       object-fit: contain;
     }
     .print-header-text { flex: 1; }
@@ -116,7 +117,7 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       letter-spacing: 0.05em;
     }
     .print-header-team {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 900;
       color: #ffffff !important;
       -webkit-print-color-adjust: exact;
@@ -124,13 +125,14 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       letter-spacing: 0.06em;
       text-align: center;
       flex: 1;
+      text-transform: uppercase;
     }
     .print-header-meta {
       text-align: right;
       color: #e6edf3 !important;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
-      font-size: 10px;
+      font-size: 11px;
       line-height: 1.8;
     }
     .print-header-meta strong {
@@ -253,10 +255,8 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       <div class="print-header-title">Coordinación EDP</div>
       <div class="print-header-sub">Planificación semanal de porteros</div>
     </div>
-    <div class="print-header-team">${safeText(team)}</div>
+    <div class="print-header-team">${safeText(teamFull)}</div>
     <div class="print-header-meta">
-      <div><strong>Semana:</strong> ${safeText(weekLabel)}</div>
-      <div><strong>Microciclo:</strong> ${microN}</div>
       <div><strong>Temporada:</strong> ${safeText(season.name || season.seasonKey)}</div>
     </div>
   </div>
@@ -356,5 +356,4 @@ function buildBlockHTML(block, icons) {
       ` : ''}
     </div>
   `;
-
 }
