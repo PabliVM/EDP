@@ -473,8 +473,7 @@
 
 /* ── FONDO SEMANA ── */
 #view-semana {
-  background-image: url('../foto_EDP.png');
-  background-size: cover;
+   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   position: relative;
