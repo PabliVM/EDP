@@ -90,7 +90,7 @@ function renderDayBody(body, date, plan, dayType, icons) {
     if (blocks.length === 0) {
       body.innerHTML = `<div class="day-empty">Sin bloques</div>`;
     } else {
-      blocks.forEach(block => body.appendChild(renderBlock(block, icons)));
+      blocks.forEach(block => body.appendChild(renderBlock(block, icons, date, plan)));
     }
     appendAddBtn(body, date, plan, '＋ Añadir bloque');
   }
