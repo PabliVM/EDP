@@ -126,7 +126,6 @@ wrap.addEventListener('click', () => {
   ) ?? -1;
   openSingleBlockEditor(date, plan, blockIdx);
 });
-  });
   return wrap;
 }
 
