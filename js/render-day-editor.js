@@ -132,18 +132,27 @@ function renderTraining(section) {
   });
 }
 
-function renderBlocks() {
-  const list   = document.getElementById('blocks-list');
-  if (!list) return;
-  const blocks = _plan.blocks || [];
+function renderBlock(block, icons) {
+  const def     = BLOCK_TYPES.find(b => b.key === block.blockType);
+  const iconSrc = icons[def?.iconKey] || '';
+  const label   = def?.label || block.blockType;
 
-  if (blocks.length === 0) {
-    list.innerHTML = `<div class="text-muted text-sm mb-8">Sin bloques.</div>`;
-    return;
-  }
-
-  list.innerHTML = '';
-  blocks.forEach((block, idx) => list.appendChild(renderBlockEditor(block, idx)));
+  const wrap = document.createElement('div');
+  wrap.className = 'training-block';
+  wrap.innerHTML = `
+    <div class="training-block-header">
+      ${iconSrc ? `<img src="${safeText(iconSrc)}" class="training-block-icon" />` : ''}
+      <span class="training-block-name">${safeText(label)}</span>
+    </div>
+    ${block.content ? `<div class="training-block-content">${safeText(block.content)}</div>` : ''}
+    <div class="training-block-meta">
+      ${block.intensidad ? `<span class="badge badge-${block.intensidad.toLowerCase()}">${block.intensidad}</span>` : ''}
+    </div>
+  `;
+  wrap.addEventListener('click', () => {
+    import('./render-day-editor.js').then(({ openDayEditor }) => openDayEditor(date, plan));
+  });
+  return wrap;
 }
 
 function renderBlockEditor(block, idx) {
