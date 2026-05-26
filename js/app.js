@@ -78,6 +78,7 @@ function loadConfig() {
       setPorterosState({
         icons:       cfg.icons       || PORTEROS_ICONS,
         microciclos: cfg.microciclos || {},
+        conceptos:   cfg.conceptos   || {},
       });
       renderHeader();
     },
