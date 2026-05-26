@@ -52,7 +52,13 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       margin: 10mm;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
 
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -63,7 +69,9 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
 
     /* HEADER */
     .print-header {
-      background: #0d1117;
+      background: #0d1117 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
       border-bottom: 3px solid #c9a227;
       padding: 10px 16px;
       display: flex;
@@ -75,7 +83,9 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.9) !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
       border: 1.5px solid #9b7c1a;
       display: flex;
       align-items: center;
@@ -88,36 +98,46 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       height: 36px;
       object-fit: contain;
     }
-    .print-header-text {
-      flex: 1;
-    }
+    .print-header-text { flex: 1; }
     .print-header-title {
       font-size: 14px;
       font-weight: 800;
-      color: #ffffff;
+      color: #ffffff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
       letter-spacing: 0.03em;
     }
     .print-header-sub {
       font-size: 10px;
-      color: #c9a227;
+      color: #c9a227 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
       margin-top: 2px;
       letter-spacing: 0.05em;
     }
     .print-header-team {
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 900;
-      color: #ffffff;
+      color: #ffffff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
       letter-spacing: 0.06em;
       text-align: center;
       flex: 1;
     }
     .print-header-meta {
       text-align: right;
-      color: #e6edf3;
+      color: #e6edf3 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
       font-size: 10px;
       line-height: 1.8;
     }
-    .print-header-meta strong { color: #c9a227; }
+    .print-header-meta strong {
+      color: #c9a227 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
 
     /* GRID */
     .print-grid {
@@ -134,7 +154,9 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       min-height: 180px;
       display: flex;
       flex-direction: column;
-      background: #fff;
+      background: #fff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .print-day-entrenamiento { border-top: 2px solid #2563eb; }
     .print-day-partido       { border-top: 2px solid #c9a227; }
@@ -142,7 +164,9 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
     .print-day-torneo        { border-top: 2px solid #a78bfa; }
 
     .print-day-header {
-      background: #f0f4fa;
+      background: #f0f4fa !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
       padding: 4px 6px;
       border-bottom: 1px solid #d1d9e6;
     }
@@ -175,9 +199,9 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
     .print-block-name    { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #0f1117; }
     .print-block-content { font-size: 8px; color: #333; margin-top: 2px; line-height: 1.4; }
     .print-block-meta    { font-size: 8px; margin-top: 2px; line-height: 1.5; }
-    .meta-alta  { color: #ef4444; font-weight: 700; }
-    .meta-media { color: #f59e0b; font-weight: 700; }
-    .meta-baja  { color: #22c55e; font-weight: 700; }
+    .meta-alta  { color: #ef4444 !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .meta-media { color: #f59e0b !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .meta-baja  { color: #22c55e !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
     /* VERTICAL */
     .print-vertical {
@@ -195,10 +219,10 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       text-align: center;
       line-height: 1.3;
     }
-    .partido  { color: #c9a227; }
-    .descanso { color: #9ca3af; }
-    .torneo   { color: #a78bfa; }
-    .viaje    { color: #6ee7b7; }
+    .partido  { color: #c9a227 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .descanso { color: #9ca3af !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .torneo   { color: #a78bfa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .viaje    { color: #6ee7b7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
     .print-match-info {
       font-size: 8px;
@@ -332,4 +356,5 @@ function buildBlockHTML(block, icons) {
       ` : ''}
     </div>
   `;
+
 }
