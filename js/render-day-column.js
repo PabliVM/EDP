@@ -117,7 +117,8 @@ function renderBlock(block, icons, date, plan) {
     </div>
     ${block.content ? `<div class="training-block-content">${safeText(block.content)}</div>` : ''}
     <div class="training-block-meta">
-      ${block.intensidad ? `<span class="badge badge-${block.intensidad.toLowerCase()}">${block.intensidad}</span>` : ''}
+     ${block.intensidad ? `<div style="font-size:10px;font-weight:700;margin-top:2px;">INTENSIDAD: <span class="badge badge-${block.intensidad.toLowerCase()}">${block.intensidad}</span></div>` : ''}
+${block.impactos   ? `<div style="font-size:10px;font-weight:700;margin-top:2px;">IMPACTOS: <span class="badge badge-${block.impactos.toLowerCase()}">${block.impactos}</span></div>`   : ''}
     </div>
   `;
 
