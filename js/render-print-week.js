@@ -46,7 +46,7 @@ function buildPrintHTML({ days, plans, season, team, teamFull, microN, monday, i
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Planificación EDP — ${safeText(teamFull)} — ${safeText(weekLabel)}</title>
+  <title>Planificación EDP — ${safeText(teamFull)}</title>
   <style>
     @page {
       size: A4 landscape;
@@ -70,15 +70,16 @@ function buildPrintHTML({ days, plans, season, team, teamFull, microN, monday, i
 
     /* HEADER */
     .print-header {
-      background: #0d1117 !important;
+      background: #1d4ed8 !important;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
-      border-bottom: 3px solid #c9a227;
+      border-bottom: 3px solid #93c5fd;
       padding: 10px 16px;
       display: flex;
       align-items: center;
       gap: 16px;
       margin-bottom: 10px;
+      position: relative;
     }
     .print-header-logo {
       width: 48px;
@@ -87,7 +88,7 @@ function buildPrintHTML({ days, plans, season, team, teamFull, microN, monday, i
       background: rgba(255,255,255,0.9) !important;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
-      border: 1.5px solid #9b7c1a;
+      border: 1.5px solid #93c5fd;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -110,7 +111,7 @@ function buildPrintHTML({ days, plans, season, team, teamFull, microN, monday, i
     }
     .print-header-sub {
       font-size: 10px;
-      color: #c9a227 !important;
+      color: #bfdbfe !important;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
       margin-top: 2px;
@@ -123,22 +124,11 @@ function buildPrintHTML({ days, plans, season, team, teamFull, microN, monday, i
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
       letter-spacing: 0.06em;
-      text-align: center;
-      flex: 1;
       text-transform: uppercase;
-    }
-    .print-header-meta {
-      text-align: right;
-      color: #e6edf3 !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-      font-size: 11px;
-      line-height: 1.8;
-    }
-    .print-header-meta strong {
-      color: #c9a227 !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      white-space: nowrap;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     /* GRID */
@@ -256,9 +246,6 @@ function buildPrintHTML({ days, plans, season, team, teamFull, microN, monday, i
       <div class="print-header-sub">Planificación semanal de porteros</div>
     </div>
     <div class="print-header-team">${safeText(teamFull)}</div>
-    <div class="print-header-meta">
-      <div><strong>Temporada:</strong> ${safeText(season.name || season.seasonKey)}</div>
-    </div>
   </div>
 
   <div class="print-grid">
