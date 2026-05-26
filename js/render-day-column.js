@@ -6,7 +6,7 @@ import { getDayName, formatDate, toDateKey, getWeekKey, getMondayOfWeek } from '
 import { porterosState } from './porteros-state.js';
 import { DAY_TYPES, BLOCK_TYPES } from './porteros-constants.js';
 import { saveDayPlan }            from './firebase-service.js';
-import { openDayEditor, openBlockEditor, openSingleBlockEditor } from './render-day-editor.js';
+import { openDayEditor, openSingleBlockEditor } from './render-day-editor.js';
 import { showError, safeText }    from './utils.js';
 
 export function renderDayColumn(date, plan, isToday = false) {
@@ -120,12 +120,12 @@ function renderBlock(block, icons, date, plan) {
       ${block.intensidad ? `<span class="badge badge-${block.intensidad.toLowerCase()}">${block.intensidad}</span>` : ''}
     </div>
   `;
-wrap.addEventListener('click', () => {
-  const blockIdx = plan?.blocks?.findIndex(b =>
-    b.blockType === block.blockType && b.content === block.content
-  ) ?? -1;
-  openSingleBlockEditor(date, plan, blockIdx);
-});
+  wrap.addEventListener('click', () => {
+    const blockIdx = plan?.blocks?.findIndex(b =>
+      b.blockType === block.blockType && b.content === block.content
+    ) ?? -1;
+    openSingleBlockEditor(date, plan, blockIdx);
+  });
   return wrap;
 }
 
