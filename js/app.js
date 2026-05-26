@@ -34,12 +34,15 @@ function showView(view) {
   document.getElementById('view-semana').classList.toggle('hidden', view !== 'semana');
   setPorterosState({ currentView: view });
   renderHeader();
+  saveStateToUrl();
 }
 
 function setupEvents() {
-  document.addEventListener('porteros:team-changed', teamKey => {
-    showView('semana');
-    renderWeekPlanning();
+document.addEventListener('porteros:team-changed', e => {
+  showView('semana');
+  saveStateToUrl();
+  renderWeekPlanning();
+});
   });
 
   document.addEventListener('edp:go-inicio', () => {
@@ -103,8 +106,31 @@ async function boot() {
   loadSeasons();
   loadConfig();
 
-  showView('inicio');
-  renderInicio();
+  const { team, view } = loadStateFromUrl();
+
+  if (team && view === 'semana') {
+    showView('semana');
+    setTimeout(() => renderWeekPlanning(), 600);
+  } else {
+    showView('inicio');
+    renderInicio();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', boot);
+
+function saveStateToUrl() {
+  const params = new URLSearchParams();
+  if (porterosState.activeTeam)   params.set('team', porterosState.activeTeam);
+  if (porterosState.currentView)  params.set('view', porterosState.currentView);
+  history.replaceState(null, '', '?' + params.toString());
+}
+
+function loadStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const team   = params.get('team');
+  const view   = params.get('view');
+  if (team) setPorterosState({ activeTeam: team });
+  if (view) setPorterosState({ currentView: view });
+  return { team, view };
+}
