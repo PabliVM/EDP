@@ -445,3 +445,8 @@
   height: 38px;
   object-fit: contain;
 }
+@media (max-width: 580px) {
+  .btn-header-action[id="btn-equipos"] {
+    display: none;
+  }
+}
