@@ -1,6 +1,7 @@
 // ================================================
 // RENDER-WEEK-PLANNING.JS
 // ================================================
+import { printWeek, printAllWeeks } from './render-print-week.js';
 import { printWeek }               from './render-print-week.js';
 import { porterosState, setPorterosState } from './porteros-state.js';
 import {
@@ -55,6 +56,8 @@ export function renderWeekPlanning() {
     </div>
     <button class="btn btn-ghost" id="btn-today-week">Hoy</button>
     <button class="btn btn-ghost btn-icon" id="btn-next-week">▶</button>
+    <button class="btn btn-ghost no-print" id="btn-print-week" title="Imprimir este equipo">🖨️</button>
+<button class="btn btn-ghost no-print" id="btn-print-all" title="Imprimir todos los equipos">🖨️ Todos</button>
     <button class="btn btn-ghost no-print" id="btn-print-week" title="Imprimir semana">🖨️</button>
   `;
   panel.appendChild(nav);
@@ -63,6 +66,7 @@ export function renderWeekPlanning() {
   document.getElementById('btn-next-week').addEventListener('click',  () => navigate(1));
   document.getElementById('btn-today-week').addEventListener('click', () => goToday());
   document.getElementById('btn-print-week').addEventListener('click', () => printWeek());
+  document.getElementById('btn-print-all').addEventListener('click', () => printAllWeeks());
 
   // ── GRID ──
   const grid = document.createElement('div');
