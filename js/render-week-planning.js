@@ -1,6 +1,7 @@
 // ================================================
 // RENDER-WEEK-PLANNING.JS
 // ================================================
+import { printWeek }               from './render-print-week.js';
 import { porterosState, setPorterosState } from './porteros-state.js';
 import {
   getMondayOfWeek, getWeekDays, addWeeks,
@@ -61,9 +62,7 @@ export function renderWeekPlanning() {
   document.getElementById('btn-prev-week').addEventListener('click',  () => navigate(-1));
   document.getElementById('btn-next-week').addEventListener('click',  () => navigate(1));
   document.getElementById('btn-today-week').addEventListener('click', () => goToday());
-  document.getElementById('btn-print-week').addEventListener('click', () => {
-    import('./render-print-week.js').then(({ printWeek }) => printWeek());
-  });
+  document.getElementById('btn-print-week').addEventListener('click', () => printWeek());
 
   // ── GRID ──
   const grid = document.createElement('div');
