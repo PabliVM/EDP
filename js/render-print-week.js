@@ -378,10 +378,8 @@ function buildBlockHTML(block, icons) {
       ${block.content ? `<div class="print-block-content">${safeText(block.content)}</div>` : ''}
       ${isCampo && (block.intensidad || block.impactos) ? `
         <div class="print-block-meta">
-          ${block.intensidad ? `INTENSIDAD: <span class="${intensidadClass}">${safeText(block.intensidad)}</span>` : ''}
-          ${block.intensidad && block.impactos ? ' · ' : ''}
-          ${block.impactos   ? `IMPACTOS: <span class="${impactosClass}">${safeText(block.impactos)}</span>` : ''}
-        </div>
+         ${block.intensidad ? `<div>INTENSIDAD: <span class="${intensidadClass}">${safeText(block.intensidad)}</span></div>` : ''}
+${block.impactos   ? `<div>IMPACTOS: <span class="${impactosClass}">${safeText(block.impactos)}</span></div>`   : ''}
       ` : ''}
     </div>
   `;
