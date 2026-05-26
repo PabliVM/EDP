@@ -457,3 +457,17 @@
     display: none;
   }
 }
+@media (max-width: 580px) {
+  .btn-header-action,
+  .season-select,
+  .btn-season-add,
+  #btn-add-season {
+    display: none;
+  }
+  .header-app-name {
+    font-size: 12px;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: nowrap;
+  }
+}
