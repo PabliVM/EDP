@@ -303,3 +303,14 @@ function buildConceptSelect(idx, block) {
     </select>
   `;
 }
+export function openBlockEditor(date, plan, blockIdx) {
+  _date = date;
+  _plan = plan ? JSON.parse(JSON.stringify(plan)) : buildEmpty(date);
+  renderModal();
+  setTimeout(() => {
+    const blockCard = document.querySelector(`[data-block-card="${blockIdx}"]`);
+    if (blockCard) blockCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
+  document.getElementById('porteros-overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
