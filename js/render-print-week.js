@@ -32,9 +32,8 @@ export function printWeek() {
 }
 
 function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
-  const weekLabel  = formatWeekRange(monday);
-  const logoSrc    = icons.logo || './rm.png';
-  const fondoSrc   = './foto_EDP.png';
+  const weekLabel = formatWeekRange(monday);
+  const logoSrc   = icons.logo || './rm.png';
 
   const daysHTML = days.map(date => {
     const key  = toDateKey(date);
@@ -60,25 +59,6 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       font-size: 10px;
       color: #111;
       background: #fff;
-      position: relative;
-      min-height: 100vh;
-    }
-
-    /* FONDO */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url('${fondoSrc}');
-      background-size: cover;
-      background-position: center;
-      opacity: 0.12;
-      z-index: 0;
-    }
-
-    .print-wrap {
-      position: relative;
-      z-index: 1;
     }
 
     /* HEADER */
@@ -88,12 +68,12 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       padding: 10px 16px;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 16px;
       margin-bottom: 10px;
     }
     .print-header-logo {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: rgba(255,255,255,0.9);
       border: 1.5px solid #9b7c1a;
@@ -104,15 +84,15 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       flex-shrink: 0;
     }
     .print-header-logo img {
-      width: 34px;
-      height: 34px;
+      width: 36px;
+      height: 36px;
       object-fit: contain;
     }
     .print-header-text {
       flex: 1;
     }
     .print-header-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 800;
       color: #ffffff;
       letter-spacing: 0.03em;
@@ -120,18 +100,24 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
     .print-header-sub {
       font-size: 10px;
       color: #c9a227;
-      margin-top: 1px;
+      margin-top: 2px;
       letter-spacing: 0.05em;
+    }
+    .print-header-team {
+      font-size: 22px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 0.06em;
+      text-align: center;
+      flex: 1;
     }
     .print-header-meta {
       text-align: right;
       color: #e6edf3;
       font-size: 10px;
-      line-height: 1.7;
+      line-height: 1.8;
     }
-    .print-header-meta strong {
-      color: #c9a227;
-    }
+    .print-header-meta strong { color: #c9a227; }
 
     /* GRID */
     .print-grid {
@@ -148,7 +134,7 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       min-height: 180px;
       display: flex;
       flex-direction: column;
-      background: rgba(255,255,255,0.92);
+      background: #fff;
     }
     .print-day-entrenamiento { border-top: 2px solid #2563eb; }
     .print-day-partido       { border-top: 2px solid #c9a227; }
@@ -189,9 +175,9 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
     .print-block-name    { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #0f1117; }
     .print-block-content { font-size: 8px; color: #333; margin-top: 2px; line-height: 1.4; }
     .print-block-meta    { font-size: 8px; margin-top: 2px; line-height: 1.5; }
-    .meta-alta   { color: #ef4444; font-weight: 700; }
-    .meta-media  { color: #f59e0b; font-weight: 700; }
-    .meta-baja   { color: #22c55e; font-weight: 700; }
+    .meta-alta  { color: #ef4444; font-weight: 700; }
+    .meta-media { color: #f59e0b; font-weight: 700; }
+    .meta-baja  { color: #22c55e; font-weight: 700; }
 
     /* VERTICAL */
     .print-vertical {
@@ -202,7 +188,7 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       padding: 6px 0;
     }
     .print-vertical-word {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 900;
       letter-spacing: 0.12em;
       text-transform: uppercase;
@@ -234,7 +220,6 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
   </style>
 </head>
 <body>
-<div class="print-wrap">
 
   <div class="print-header">
     <div class="print-header-logo">
@@ -244,8 +229,8 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
       <div class="print-header-title">Coordinación EDP</div>
       <div class="print-header-sub">Planificación semanal de porteros</div>
     </div>
+    <div class="print-header-team">${safeText(team)}</div>
     <div class="print-header-meta">
-      <div><strong>Equipo:</strong> ${safeText(team)}</div>
       <div><strong>Semana:</strong> ${safeText(weekLabel)}</div>
       <div><strong>Microciclo:</strong> ${microN}</div>
       <div><strong>Temporada:</strong> ${safeText(season.name || season.seasonKey)}</div>
@@ -256,7 +241,6 @@ function buildPrintHTML({ days, plans, season, team, microN, monday, icons }) {
     ${daysHTML}
   </div>
 
-</div>
 </body>
 </html>`;
 }
@@ -288,58 +272,38 @@ function buildDayContent(dayType, plan, icons) {
   if (!dayType || dayType === 'libre') {
     return `<div class="print-empty">Sin planificación</div>`;
   }
-
   if (dayType === 'descanso') {
-    return `<div class="print-vertical">
-      <span class="print-vertical-word descanso">${'DESCANSO'.split('').join('<br>')}</span>
-    </div>`;
+    return `<div class="print-vertical"><span class="print-vertical-word descanso">${'DESCANSO'.split('').join('<br>')}</span></div>`;
   }
-
   if (dayType === 'partido') {
     const mi = plan?.matchInfo || {};
     return `
-      <div class="print-vertical">
-        <span class="print-vertical-word partido">${'PARTIDO'.split('').join('<br>')}</span>
-      </div>
+      <div class="print-vertical"><span class="print-vertical-word partido">${'PARTIDO'.split('').join('<br>')}</span></div>
       ${mi.rival || mi.hora ? `
         <div class="print-match-info">
-          ${mi.rival          ? `<div><strong>vs</strong> ${safeText(mi.rival)}</div>`           : ''}
-          ${mi.localVisitante ? `<div>${safeText(mi.localVisitante)}</div>`                      : ''}
-          ${mi.hora           ? `<div>⏰ ${safeText(mi.hora)}</div>`                             : ''}
-          ${mi.competicion    ? `<div>${safeText(mi.competicion)}</div>`                         : ''}
+          ${mi.rival          ? `<div><strong>vs</strong> ${safeText(mi.rival)}</div>` : ''}
+          ${mi.localVisitante ? `<div>${safeText(mi.localVisitante)}</div>`            : ''}
+          ${mi.hora           ? `<div>⏰ ${safeText(mi.hora)}</div>`                  : ''}
+          ${mi.competicion    ? `<div>${safeText(mi.competicion)}</div>`               : ''}
         </div>
       ` : ''}
     `;
   }
-
   if (dayType === 'torneo') {
     const ti = plan?.tournamentInfo || {};
     return `
-      <div class="print-vertical">
-        <span class="print-vertical-word torneo">${'TORNEO'.split('').join('<br>')}</span>
-      </div>
-      ${ti.nombre ? `
-        <div class="print-match-info">
-          <div><strong>${safeText(ti.nombre)}</strong></div>
-          ${ti.lugar ? `<div>📍 ${safeText(ti.lugar)}</div>` : ''}
-          ${ti.hora  ? `<div>⏰ ${safeText(ti.hora)}</div>`  : ''}
-        </div>
-      ` : ''}
+      <div class="print-vertical"><span class="print-vertical-word torneo">${'TORNEO'.split('').join('<br>')}</span></div>
+      ${ti.nombre ? `<div class="print-match-info"><div><strong>${safeText(ti.nombre)}</strong></div>${ti.lugar ? `<div>📍 ${safeText(ti.lugar)}</div>` : ''}</div>` : ''}
     `;
   }
-
   if (dayType === 'viaje') {
-    return `<div class="print-vertical">
-      <span class="print-vertical-word viaje">${'VIAJE'.split('').join('<br>')}</span>
-    </div>`;
+    return `<div class="print-vertical"><span class="print-vertical-word viaje">${'VIAJE'.split('').join('<br>')}</span></div>`;
   }
-
   if (dayType === 'entrenamiento') {
     const blocks = plan?.blocks || [];
     if (blocks.length === 0) return `<div class="print-empty">Sin bloques</div>`;
     return blocks.map(block => buildBlockHTML(block, icons)).join('');
   }
-
   return `<div class="print-empty">Sin planificación</div>`;
 }
 
@@ -362,8 +326,8 @@ function buildBlockHTML(block, icons) {
       ${isCampo && (block.intensidad || block.impactos) ? `
         <div class="print-block-meta">
           ${block.intensidad ? `INTENSIDAD: <span class="${intensidadClass}">${safeText(block.intensidad)}</span>` : ''}
-          ${block.intensidad && block.impactos ? ' &nbsp;·&nbsp; ' : ''}
-          ${block.impactos   ? `IMPACTOS: <span class="${impactosClass}">${safeText(block.impactos)}</span>`   : ''}
+          ${block.intensidad && block.impactos ? ' · ' : ''}
+          ${block.impactos   ? `IMPACTOS: <span class="${impactosClass}">${safeText(block.impactos)}</span>` : ''}
         </div>
       ` : ''}
     </div>
