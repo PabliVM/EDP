@@ -505,3 +505,9 @@
     color: #000 !important;
   }
 }
+body.dark .day-col[data-daytype="descanso"] .day-special-label {
+  color: #8b949e;
+}
+body.dark #view-semana::before {
+  background: rgba(13, 17, 23, 0.85);
+}
