@@ -437,3 +437,16 @@
   height: 26px;
   object-fit: contain;
 }
+#rm-header .header-logo {
+  width: 42px;
+  height: 42px;
+  overflow: visible;
+  background: transparent;
+  border: none;
+}
+
+#rm-header .header-logo img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
