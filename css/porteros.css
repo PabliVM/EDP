@@ -446,32 +446,12 @@
   object-fit: contain;
 }
 @media (max-width: 580px) {
-  .btn-header-action[id="btn-equipos"] {
-    display: none;
-  }
-}
-@media (max-width: 580px) {
-  .btn-header-action,
-  .season-select,
-  .btn-season-add {
-    display: none;
-  }
-}
-@media (max-width: 580px) {
   .btn-header-action,
   .season-select,
   .btn-season-add,
   #btn-add-season {
     display: none;
   }
-  .header-app-name {
-    font-size: 12px;
-    overflow: visible;
-    text-overflow: unset;
-    white-space: nowrap;
-  }
-}
-@media (max-width: 580px) {
   #rm-header .header-logo {
     width: 32px;
     height: 32px;
@@ -481,9 +461,10 @@
     height: 28px;
   }
   .header-app-name {
-    font-size: 11px;
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: calc(100vw - 120px);
   }
 }
