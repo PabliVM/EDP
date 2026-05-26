@@ -13,9 +13,7 @@ export const PORTEROS_TEAMS = [
   { key: 'IA', label: 'IA', full: 'Infantil A'     },
   { key: 'IB', label: 'IB', full: 'Infantil B'     },
   { key: 'AA', label: 'AA', full: 'Alevín A'       },
-  { key: 'AB', label: 'AB', full: 'Alevín B'       },
-  { key: 'BA', label: 'BA', full: 'Benjamín A'     },
-  { key: 'BB', label: 'BB', full: 'Benjamín B'     },
+  { key: 'F7', label: 'F7', full: 'Fútbol 7'       },
 ];
 
 export const DAY_TYPES = [
