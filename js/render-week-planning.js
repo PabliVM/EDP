@@ -2,7 +2,6 @@
 // RENDER-WEEK-PLANNING.JS
 // ================================================
 import { printWeek, printAllWeeks } from './render-print-week.js';
-import { printWeek }               from './render-print-week.js';
 import { porterosState, setPorterosState } from './porteros-state.js';
 import {
   getMondayOfWeek, getWeekDays, addWeeks,
