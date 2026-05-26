@@ -19,10 +19,10 @@ export function printWeek() {
     return;
   }
 
-  const days     = getWeekDays(monday);
-  const microN   = getMicroNumber(monday, season.startDate);
-  const plans    = window.__edpWeekPlans || {};
-  const teamFull = PORTEROS_TEAMS.find(t => t.key === team)?.full || team;
+  const days      = getWeekDays(monday);
+  const microN    = getMicroNumber(monday, season.startDate);
+  const plans     = window.__edpWeekPlans || {};
+  const teamFull  = PORTEROS_TEAMS.find(t => t.key === team)?.full || team;
   const weekLabel = formatWeekRange(monday);
 
   const html = buildFullDoc([{ teamFull, plans }], { season, microN, monday, icons, weekLabel }, false);
@@ -101,8 +101,8 @@ function openPrint(html) {
 }
 
 function buildFullDoc(sheetsData, { season, microN, monday, icons, weekLabel }, withCover) {
-  const logoSrc   = icons.logo || './rm.png';
-  const coverHTML = withCover ? buildCover({ weekLabel, season, logoSrc }) : '';
+  const logoSrc    = icons.logo || './rm.png';
+  const coverHTML  = withCover ? buildCover({ weekLabel, season, logoSrc }) : '';
   const sheetsHTML = sheetsData.map(({ teamFull, plans }) =>
     buildSheetHTML({ teamFull, plans, season, microN, monday, icons, weekLabel, logoSrc })
   ).join('');
@@ -117,7 +117,11 @@ function buildFullDoc(sheetsData, { season, microN, monday, icons, weekLabel }, 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { font-family: 'Segoe UI', sans-serif; font-size: 10px; color: #111; background: #fff; }
 
-    .page-break { page-break-after: always; break-after: page; }
+    .page-break {
+      page-break-after: always;
+      break-after: page;
+      height: 0;
+    }
 
     /* ── PORTADA ── */
     .cover {
@@ -125,7 +129,7 @@ function buildFullDoc(sheetsData, { season, microN, monday, icons, weekLabel }, 
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
       width: 100%;
-      height: 100vh;
+      height: 190mm;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -238,7 +242,7 @@ function buildFullDoc(sheetsData, { season, microN, monday, icons, weekLabel }, 
     .print-block-icon    { width: 16px; height: 16px; object-fit: contain; }
     .print-block-name    { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #0f1117; }
     .print-block-content { font-size: 8px; color: #333; margin-top: 2px; line-height: 1.4; }
-    .print-block-meta    { font-size: 8px; margin-top: 2px; line-height: 1.5; }
+    .print-block-meta    { font-size: 8px; margin-top: 2px; line-height: 1.6; }
     .meta-alta  { color: #ef4444 !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .meta-media { color: #f59e0b !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .meta-baja  { color: #22c55e !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -268,7 +272,7 @@ function buildCover({ weekLabel, season, logoSrc }) {
   const endFull   = end || '';
 
   return `
-    <div class="cover page-break">
+    <div class="cover">
       <div class="cover-logo">
         <img src="${logoSrc}" alt="RM" />
       </div>
@@ -277,6 +281,7 @@ function buildCover({ weekLabel, season, logoSrc }) {
       <div class="cover-week">📅 ${safeText(startFull)} - ${safeText(endFull)}</div>
       <div class="cover-season">${safeText(season.name || season.seasonKey)}</div>
     </div>
+    <div class="page-break"></div>
   `;
 }
 
@@ -289,7 +294,7 @@ function buildSheetHTML({ teamFull, plans, season, microN, monday, icons, weekLa
   }).join('');
 
   return `
-    <div class="page-break">
+    <div>
       <div class="print-header">
         <div class="print-header-logo">
           <img src="${logoSrc}" alt="RM" />
@@ -304,6 +309,7 @@ function buildSheetHTML({ teamFull, plans, season, microN, monday, icons, weekLa
         ${daysHTML}
       </div>
     </div>
+    <div class="page-break"></div>
   `;
 }
 
@@ -378,8 +384,9 @@ function buildBlockHTML(block, icons) {
       ${block.content ? `<div class="print-block-content">${safeText(block.content)}</div>` : ''}
       ${isCampo && (block.intensidad || block.impactos) ? `
         <div class="print-block-meta">
-         ${block.intensidad ? `<div>INTENSIDAD: <span class="${intensidadClass}">${safeText(block.intensidad)}</span></div>` : ''}
-${block.impactos   ? `<div>IMPACTOS: <span class="${impactosClass}">${safeText(block.impactos)}</span></div>`   : ''}
+          ${block.intensidad ? `<div>INTENSIDAD: <span class="${intensidadClass}">${safeText(block.intensidad)}</span></div>` : ''}
+          ${block.impactos   ? `<div>IMPACTOS: <span class="${impactosClass}">${safeText(block.impactos)}</span></div>`   : ''}
+        </div>
       ` : ''}
     </div>
   `;
