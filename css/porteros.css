@@ -445,6 +445,8 @@
   height: 38px;
   object-fit: contain;
 }
+
+/* ── MÓVIL ── */
 @media (max-width: 580px) {
   .btn-header-action,
   .season-select,
@@ -468,6 +470,43 @@
     max-width: calc(100vw - 120px);
   }
 }
+
+/* ── FONDO SEMANA ── */
+#view-semana {
+  background-image: url('../foto_EDP.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  position: relative;
+}
+
+#view-semana::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.82);
+  z-index: 0;
+  pointer-events: none;
+}
+
+#view-semana > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── DARK MODE ── */
+body.dark .day-col[data-daytype="descanso"] .day-special-label {
+  color: #8b949e;
+}
+
+body.dark #view-semana::before {
+  background: rgba(13, 17, 23, 0.92);
+}
+
+body.dark #rm-main {
+  background: var(--bg-app);
+}
+
 /* ── PRINT ── */
 @media print {
   #rm-header,
@@ -504,10 +543,4 @@
     background: #fff !important;
     color: #000 !important;
   }
-}
-body.dark .day-col[data-daytype="descanso"] .day-special-label {
-  color: #8b949e;
-}
-body.dark #view-semana::before {
-  background: rgba(13, 17, 23, 0.85);
 }
