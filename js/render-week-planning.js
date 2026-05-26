@@ -1,7 +1,6 @@
 // ================================================
 // RENDER-WEEK-PLANNING.JS
 // ================================================
-
 import { porterosState, setPorterosState } from './porteros-state.js';
 import {
   getMondayOfWeek, getWeekDays, addWeeks,
@@ -13,6 +12,7 @@ import { renderDayColumn }             from './render-day-column.js';
 import { showError }                   from './utils.js';
 
 let _unsubPlans = null;
+window.__edpWeekPlans = {};
 
 export function renderWeekPlanning() {
   const panel = document.getElementById('view-semana');
@@ -45,22 +45,25 @@ export function renderWeekPlanning() {
 
   // ── NAV ──
   const nav = document.createElement('div');
-  nav.className = 'week-nav';
-nav.innerHTML = `
-  <button class="btn btn-ghost btn-icon" id="btn-prev-week">◀</button>
-  <div class="week-nav-info">
-    <div class="week-nav-label">${formatWeekRange(monday)}</div>
-    <div class="week-nav-sub">Microciclo ${microN} · ${porterosState.activeSeason.name || porterosState.activeSeason.seasonKey}</div>
-  </div>
-  <button class="btn btn-ghost" id="btn-today-week">Hoy</button>
-  <button class="btn btn-ghost btn-icon" id="btn-next-week">▶</button>
-`;
+  nav.className = 'week-nav no-print';
+  nav.innerHTML = `
+    <button class="btn btn-ghost btn-icon" id="btn-prev-week">◀</button>
+    <div class="week-nav-info">
+      <div class="week-nav-label">${formatWeekRange(monday)}</div>
+      <div class="week-nav-sub">Microciclo ${microN} · ${porterosState.activeSeason.name || porterosState.activeSeason.seasonKey}</div>
+    </div>
+    <button class="btn btn-ghost" id="btn-today-week">Hoy</button>
+    <button class="btn btn-ghost btn-icon" id="btn-next-week">▶</button>
+    <button class="btn btn-ghost no-print" id="btn-print-week" title="Imprimir semana">🖨️</button>
+  `;
   panel.appendChild(nav);
 
-document.getElementById('btn-prev-week').addEventListener('click',  () => navigate(-1));
-document.getElementById('btn-next-week').addEventListener('click',  () => navigate(1));
-document.getElementById('btn-today-week').addEventListener('click', () => goToday());
-
+  document.getElementById('btn-prev-week').addEventListener('click',  () => navigate(-1));
+  document.getElementById('btn-next-week').addEventListener('click',  () => navigate(1));
+  document.getElementById('btn-today-week').addEventListener('click', () => goToday());
+  document.getElementById('btn-print-week').addEventListener('click', () => {
+    import('./render-print-week.js').then(({ printWeek }) => printWeek());
+  });
 
   // ── GRID ──
   const grid = document.createElement('div');
@@ -85,6 +88,8 @@ document.getElementById('btn-today-week').addEventListener('click', () => goToda
     plans => {
       const byDate = {};
       plans.forEach(p => { byDate[p.date] = p; });
+      window.__edpWeekPlans = byDate;
+
       const grid = document.getElementById('week-grid');
       if (!grid) return;
       grid.innerHTML = '';
