@@ -47,7 +47,6 @@ export function renderWeekPlanning() {
   const nav = document.createElement('div');
   nav.className = 'week-nav';
 nav.innerHTML = `
-  <button class="btn btn-ghost btn-sm" id="btn-equipos">← Equipos</button>
   <button class="btn btn-ghost btn-icon" id="btn-prev-week">◀</button>
   <div class="week-nav-info">
     <div class="week-nav-label">${formatWeekRange(monday)}</div>
@@ -61,9 +60,7 @@ nav.innerHTML = `
 document.getElementById('btn-prev-week').addEventListener('click',  () => navigate(-1));
 document.getElementById('btn-next-week').addEventListener('click',  () => navigate(1));
 document.getElementById('btn-today-week').addEventListener('click', () => goToday());
-document.getElementById('btn-equipos').addEventListener('click', () => {
-  document.dispatchEvent(new CustomEvent('edp:go-inicio'));
-});
+
 
   // ── GRID ──
   const grid = document.createElement('div');
