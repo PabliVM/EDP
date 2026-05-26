@@ -132,7 +132,7 @@ function renderTraining(section) {
   });
 }
 
-function renderBlock(block, icons) {
+function renderBlock(block, icons, date, plan) {
   const def     = BLOCK_TYPES.find(b => b.key === block.blockType);
   const iconSrc = icons[def?.iconKey] || '';
   const label   = def?.label || block.blockType;
@@ -149,9 +149,12 @@ function renderBlock(block, icons) {
       ${block.intensidad ? `<span class="badge badge-${block.intensidad.toLowerCase()}">${block.intensidad}</span>` : ''}
     </div>
   `;
-  wrap.addEventListener('click', () => {
-    import('./render-day-editor.js').then(({ openDayEditor }) => openDayEditor(date, plan));
+wrap.addEventListener('click', () => {
+  import('./render-day-editor.js').then(({ openBlockEditor }) => {
+    const blockIdx = plan?.blocks?.indexOf(block) ?? -1;
+    openBlockEditor(date, plan, blockIdx);
   });
+});
   return wrap;
 }
 
@@ -161,6 +164,7 @@ function renderBlockEditor(block, idx) {
 
   const card = document.createElement('div');
   card.className = 'card card-sm mb-8';
+  card.dataset.blockCard = idx;
   card.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
       <span class="fw-700" style="font-size:12px;flex:1;">${safeText(label)}</span>
