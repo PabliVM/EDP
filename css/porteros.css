@@ -36,9 +36,9 @@
     scroll-snap-align: start;
     min-width: 160px;
   }
-  .training-block-name { font-size: 11px; }
+  .training-block-name    { font-size: 11px; }
   .training-block-content { font-size: 10px; }
-  .training-block-icon { width: 20px; height: 20px; }
+  .training-block-icon    { width: 20px; height: 20px; }
 }
 
 @media (max-width: 580px) {
@@ -72,8 +72,8 @@
   border-bottom: 1px solid var(--border-default);
   background: var(--bg-raised);
 }
-.day-name     { font-size: clamp(9px, 0.9vw, 13px); font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); display: block; }
-.day-number   { font-size: clamp(18px, 2.2vw, 32px); font-weight: 700; line-height: 1; color: var(--text-primary); display: block; }
+.day-name      { font-size: clamp(9px, 0.9vw, 13px); font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); display: block; }
+.day-number    { font-size: clamp(18px, 2.2vw, 32px); font-weight: 700; line-height: 1; color: var(--text-primary); display: block; }
 .day-date-full { font-size: clamp(9px, 0.8vw, 12px); color: var(--text-muted); display: block; }
 .day-col.today .day-number { color: var(--blue-500); }
 
@@ -361,6 +361,7 @@
   color: var(--blue-500);
   border-bottom-color: var(--blue-500);
 }
+
 /* ── INICIO ── */
 .inicio-hero {
   display: flex;
@@ -423,30 +424,24 @@
   border-color: var(--blue-500);
   box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
 }
-.equipo-card-key {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-.equipo-card-full {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-#rm-header .header-logo img {
-  width: 26px;
-  height: 26px;
-  object-fit: contain;
-}
-#rm-header .header-logo {
-  width: 42px;
-  height: 42px;
-  overflow: visible;
-  background: transparent;
-  border: none;
-}
+.equipo-card-key  { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.equipo-card-full { font-size: 11px; color: var(--text-secondary); }
 
+/* ── ESCUDO HEADER ── */
+#rm-header .header-logo {
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  border: 1.5px solid var(--rm-gold-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
 #rm-header .header-logo img {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
 }
