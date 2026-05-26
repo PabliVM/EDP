@@ -471,3 +471,19 @@
     white-space: nowrap;
   }
 }
+@media (max-width: 580px) {
+  #rm-header .header-logo {
+    width: 32px;
+    height: 32px;
+  }
+  #rm-header .header-logo img {
+    width: 28px;
+    height: 28px;
+  }
+  .header-app-name {
+    font-size: 11px;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+}
