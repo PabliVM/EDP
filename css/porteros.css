@@ -2,11 +2,16 @@
 .week-nav {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 8px 0 12px;
+  padding: 8px 10px 12px;
   flex-wrap: wrap;
 }
-.week-nav-info { flex: 1; min-width: 160px; }
+.week-nav-info {
+  flex: 0 0 auto;
+  text-align: center;
+  min-width: 200px;
+}
 .week-nav-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .week-nav-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
 
@@ -14,8 +19,8 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 10px;
-  padding: 0 40px;
-  max-width: 1600px;
+  padding: 0 10px;
+  max-width: 100%;
   margin: 0 auto;
 }
 @media (max-width: 900px) { .week-grid { grid-template-columns: repeat(4, 1fr); } }
