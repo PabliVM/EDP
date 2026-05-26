@@ -5,12 +5,13 @@
 import { porterosState }        from './porteros-state.js';
 import { getDayName, formatDate, toDateKey, getWeekKey, getMondayOfWeek } from './dates.js';
 import { saveDayPlan }          from './firebase-service.js';
-import { BLOCK_TYPES, DAY_TYPES, INTENSIDADES, IMPACTOS, STATUS_OPTIONS } from './porteros-constants.js';
+import { BLOCK_TYPES, DAY_TYPES, INTENSIDADES, IMPACTOS } from './porteros-constants.js';
 import { showError, safeText }  from './utils.js';
 
 let _plan = null;
 let _date = null;
 
+// ── ABRIR EDITOR COMPLETO (lápiz) ────────────────
 export function openDayEditor(date, plan) {
   _date = date;
   _plan = plan ? JSON.parse(JSON.stringify(plan)) : buildEmpty(date);
@@ -19,16 +20,18 @@ export function openDayEditor(date, plan) {
   document.body.style.overflow = 'hidden';
 }
 
-export function openBlockEditor(date, plan, blockIdx) {
+// ── ABRIR EDITOR DE UN BLOQUE SOLO (click ficha) ─
+export function openSingleBlockEditor(date, plan, blockIdx) {
   _date = date;
   _plan = plan ? JSON.parse(JSON.stringify(plan)) : buildEmpty(date);
-  renderModal();
-  setTimeout(() => {
-    const blockCard = document.querySelector(`[data-block-card="${blockIdx}"]`);
-    if (blockCard) blockCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 100);
+  renderSingleBlockModal(blockIdx);
   document.getElementById('porteros-overlay').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+}
+
+// ── ABRIR EDITOR COMPLETO CON SCROLL (openBlockEditor legacy) ─
+export function openBlockEditor(date, plan, blockIdx) {
+  openDayEditor(date, plan);
 }
 
 function close() {
@@ -56,6 +59,7 @@ function buildEmpty(date) {
   };
 }
 
+// ── MODAL COMPLETO (lápiz) ────────────────────────
 function renderModal() {
   const modal   = document.getElementById('porteros-modal');
   const dayType = _plan?.dayType || '';
@@ -79,14 +83,6 @@ function renderModal() {
       <label class="label">Notas</label>
       <textarea class="textarea" id="editor-notes" rows="2">${_plan?.notes || ''}</textarea>
     </div>
-    <div class="field-group mb-12">
-      <label class="label">Estado</label>
-      <select class="select" id="editor-status">
-        ${STATUS_OPTIONS.map(s =>
-          `<option value="${s.key}" ${_plan?.status === s.key ? 'selected' : ''}>${s.label}</option>`
-        ).join('')}
-      </select>
-    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="editor-cancel">Cancelar</button>
       <button class="btn btn-primary" id="editor-save">Guardar</button>
@@ -105,6 +101,65 @@ function renderModal() {
   };
 
   renderDynamic();
+}
+
+// ── MODAL BLOQUE INDIVIDUAL (click ficha) ─────────
+function renderSingleBlockModal(blockIdx) {
+  const modal = document.getElementById('porteros-modal');
+  const block = _plan.blocks?.[blockIdx];
+  if (!block) { close(); return; }
+
+  const def   = BLOCK_TYPES.find(b => b.key === block.blockType);
+  const label = def?.label || block.blockType;
+
+  modal.innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">${getDayName(_date)}, ${formatDate(_date)}</div>
+      <button class="modal-close" id="editor-close">✕</button>
+    </div>
+    <div class="card card-sm mb-12" style="border-left:3px solid var(--blue-500);">
+      <div style="font-size:17px;font-weight:800;text-transform:uppercase;
+        letter-spacing:0.05em;margin-bottom:14px;color:var(--text-primary);">
+        ${safeText(label)}
+      </div>
+      <div class="field-group mb-10">
+        <label class="label">Contenido</label>
+        ${buildConceptSelect(blockIdx, block)}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field-group">
+          <label class="label">Intensidad</label>
+          <select class="select block-field" data-idx="${blockIdx}" data-field="intensidad">
+            <option value="">—</option>
+            ${INTENSIDADES.map(i => `<option value="${i}" ${block.intensidad === i ? 'selected' : ''}>${i}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="label">Impactos</label>
+          <select class="select block-field" data-idx="${blockIdx}" data-field="impactos">
+            <option value="">—</option>
+            ${INTENSIDADES.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="editor-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="editor-save">Guardar</button>
+    </div>
+  `;
+
+  document.getElementById('editor-close').addEventListener('click', close);
+  document.getElementById('editor-cancel').addEventListener('click', close);
+  document.getElementById('editor-save').addEventListener('click', save);
+  document.getElementById('porteros-overlay').onclick = e => {
+    if (e.target === document.getElementById('porteros-overlay')) close();
+  };
+
+  modal.querySelectorAll('.block-field').forEach(f => {
+    f.addEventListener('input',  e => { _plan.blocks[parseInt(e.target.dataset.idx)][e.target.dataset.field] = e.target.value; });
+    f.addEventListener('change', e => { _plan.blocks[parseInt(e.target.dataset.idx)][e.target.dataset.field] = e.target.value; });
+  });
 }
 
 function renderDynamic() {
@@ -151,9 +206,11 @@ function renderBlockEditor(block, idx) {
   const card = document.createElement('div');
   card.className = 'card card-sm mb-8';
   card.dataset.blockCard = idx;
+  card.style.borderLeft = '3px solid var(--blue-500)';
   card.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <span class="fw-700" style="font-size:13px;flex:1;">${safeText(label)}</span>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="font-size:16px;font-weight:800;text-transform:uppercase;
+        letter-spacing:0.04em;flex:1;color:var(--text-primary);">${safeText(label)}</span>
       <button class="btn btn-ghost btn-sm" data-remove="${idx}">✕</button>
     </div>
     <div class="field-group mb-8">
@@ -172,7 +229,7 @@ function renderBlockEditor(block, idx) {
         <label class="label">Impactos</label>
         <select class="select block-field" data-idx="${idx}" data-field="impactos">
           <option value="">—</option>
-          ${IMPACTOS.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
+          ${INTENSIDADES.map(i => `<option value="${i}" ${block.impactos === i ? 'selected' : ''}>${i}</option>`).join('')}
         </select>
       </div>
     </div>
@@ -248,8 +305,8 @@ function renderTorneo(section) {
 }
 
 async function save() {
-  _plan.notes  = document.getElementById('editor-notes')?.value  || '';
-  _plan.status = document.getElementById('editor-status')?.value || 'borrador';
+  _plan.notes  = document.getElementById('editor-notes')?.value || '';
+  _plan.status = 'borrador';
 
   if (!porterosState.activeSeason || !porterosState.activeTeam) {
     showError('Selecciona equipo y temporada.');
