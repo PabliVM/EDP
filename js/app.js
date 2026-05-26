@@ -12,6 +12,22 @@ import { renderInicio }                    from './render-inicio.js';
 import { openConfigPanel }                 from './render-config-panel.js';
 import { showError }                       from './utils.js';
 
+function saveStateToUrl() {
+  const params = new URLSearchParams();
+  if (porterosState.activeTeam)  params.set('team', porterosState.activeTeam);
+  if (porterosState.currentView) params.set('view', porterosState.currentView);
+  history.replaceState(null, '', '?' + params.toString());
+}
+
+function loadStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const team   = params.get('team');
+  const view   = params.get('view');
+  if (team) setPorterosState({ activeTeam: team });
+  if (view) setPorterosState({ currentView: view });
+  return { team, view };
+}
+
 function renderTeamBar() {
   let container = document.getElementById('rm-team-bar');
   if (!container) {
@@ -25,7 +41,6 @@ function renderTeamBar() {
     `;
     document.getElementById('rm-team-bar-container').appendChild(container);
   }
-
   import('./render-team-bar.js').then(({ renderTeamBar: _render }) => _render());
 }
 
@@ -38,11 +53,9 @@ function showView(view) {
 }
 
 function setupEvents() {
-document.addEventListener('porteros:team-changed', e => {
-  showView('semana');
-  saveStateToUrl();
-  renderWeekPlanning();
-});
+  document.addEventListener('porteros:team-changed', () => {
+    showView('semana');
+    renderWeekPlanning();
   });
 
   document.addEventListener('edp:go-inicio', () => {
@@ -62,7 +75,7 @@ document.addEventListener('porteros:team-changed', e => {
 function loadSeasons() {
   listenSeasons(
     seasons => {
-      const active = seasons.find(s => s.isActive) || seasons[0] || null;
+      const active     = seasons.find(s => s.isActive) || seasons[0] || null;
       const seasonKeys = seasons.map(s => s.seasonKey || s.name);
       setPorterosState({ allSeasons: seasons, seasons: seasonKeys });
       if (active && active.id !== porterosState.activeSeason?.id) {
@@ -118,19 +131,3 @@ async function boot() {
 }
 
 document.addEventListener('DOMContentLoaded', boot);
-
-function saveStateToUrl() {
-  const params = new URLSearchParams();
-  if (porterosState.activeTeam)   params.set('team', porterosState.activeTeam);
-  if (porterosState.currentView)  params.set('view', porterosState.currentView);
-  history.replaceState(null, '', '?' + params.toString());
-}
-
-function loadStateFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  const team   = params.get('team');
-  const view   = params.get('view');
-  if (team) setPorterosState({ activeTeam: team });
-  if (view) setPorterosState({ currentView: view });
-  return { team, view };
-}
