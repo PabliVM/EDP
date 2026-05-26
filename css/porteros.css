@@ -23,8 +23,26 @@
   max-width: 100%;
   margin: 0 auto;
 }
-@media (max-width: 900px) { .week-grid { grid-template-columns: repeat(4, 1fr); } }
-@media (max-width: 580px) { .week-grid { grid-template-columns: repeat(2, 1fr); } }
+
+@media (max-width: 900px) {
+  .week-grid {
+    grid-template-columns: repeat(7, minmax(220px, 1fr));
+    overflow-x: auto;
+    padding: 0 12px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .day-col {
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 580px) {
+  .week-grid {
+    grid-template-columns: repeat(7, minmax(85vw, 1fr));
+    padding: 0 8px;
+  }
+}
 
 .day-col {
   background: var(--bg-surface);
