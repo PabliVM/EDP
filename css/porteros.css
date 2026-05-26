@@ -131,10 +131,11 @@
   gap: 6px;
   margin-bottom: 4px;
 }
-.training-block-icon { width: 20px; height: 20px; object-fit: contain; }
-.training-block-name { font-size: 10px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; flex: 1; }
-.training-block-content { font-size: 10px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
-.training-block-meta { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+.training-block-icon { width: 36px; height: 36px; object-fit: contain; }
+.training-block-name { font-size: 16px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; flex: 1; }
+.training-block-content { font-size: 14px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+.training-block { padding: 10px 12px; }
+.training-block-header { gap: 10px; margin-bottom: 6px; }
 
 .add-block-btn {
   display: flex;
