@@ -18,7 +18,7 @@ export function renderHeader() {
         <div class="header-logo">
           <img src="${LOGO_PATH}" alt="RM" />
         </div>
-        <span class="header-app-name">Coordinación EDP</span>
+        <span class="header-app-name">Microciclos - Departamento GK</span>
       </div>
       <div class="header-right">
         ${!isInicio ? `<button class="btn-header-action" id="btn-equipos" title="Volver a equipos">← Equipos</button>` : ''}
