@@ -208,11 +208,8 @@ export async function saveConfigSection(sectionName, data) {
 }
 
 export async function initConfigIfEmpty() {
-  const iconsRef  = doc(getDB(), C.CONFIG, 'icons');
-  const iconsSnap = await getDoc(iconsRef);
-  if (!iconsSnap.exists()) {
-    await setDoc(iconsRef, { ...PORTEROS_ICONS, updatedAt: serverTimestamp() });
-  }
+  const iconsRef = doc(getDB(), C.CONFIG, 'icons');
+  await setDoc(iconsRef, { ...PORTEROS_ICONS, updatedAt: serverTimestamp() });
 }
 
 export async function deleteDocument(collectionName, id) {
