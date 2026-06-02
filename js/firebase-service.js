@@ -20,19 +20,27 @@ import {
   orderBy,
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
 import { firebaseConfig } from './firebase-config.js';
 import { FIREBASE_COLLECTIONS, PORTEROS_ICONS } from './porteros-constants.js';
 
 const C = FIREBASE_COLLECTIONS;
 
-let _app = null;
-let _db  = null;
+let _app     = null;
+let _db      = null;
+let _storage = null;
 
 export function initFirebase() {
   if (!_app) {
-    _app = initializeApp(firebaseConfig);
-    _db  = getFirestore(_app);
+    _app     = initializeApp(firebaseConfig);
+    _db      = getFirestore(_app);
+    _storage = getStorage(_app);
   }
   return true;
 }
@@ -40,6 +48,11 @@ export function initFirebase() {
 export function getDB() {
   if (!_db) throw new Error('Firebase no inicializado.');
   return _db;
+}
+
+export function getStorageInstance() {
+  if (!_storage) throw new Error('Firebase Storage no inicializado.');
+  return _storage;
 }
 
 // ── TEMPORADAS ────────────────────────────────────
@@ -79,8 +92,6 @@ export async function upsertWeek(weekData) {
 }
 
 // ── MICROCICLO POR SEMANA Y EQUIPO ────────────────
-// Guarda un número de microciclo manual para una semana+equipo concretos
-// docId: `{seasonKey}_{teamKey}_{weekId}`
 
 export async function saveWeekMicro(seasonKey, teamKey, weekId, microNumber) {
   const id  = `${seasonKey.replace(/\//g, '-')}_${teamKey}_${weekId}`;
@@ -100,6 +111,42 @@ export async function getWeekMicro(seasonKey, teamKey, weekId) {
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
   return snap.data().microNumber ?? null;
+}
+
+// ── PORTERO INDIVIDUAL ────────────────────────────
+// Nombre editable del portero (guardado en config)
+
+export async function savePorteroName(name) {
+  await setDoc(doc(getDB(), C.CONFIG, 'portero_individual'), {
+    name,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function getPorteroName() {
+  const snap = await getDoc(doc(getDB(), C.CONFIG, 'portero_individual'));
+  if (!snap.exists()) return '';
+  return snap.data().name || '';
+}
+
+// Foto del portero — sube a Firebase Storage y guarda URL en Firestore
+
+export async function uploadPorteroPhoto(file) {
+  const path    = `porteros/portero_individual/foto.jpg`;
+  const fileRef = storageRef(getStorageInstance(), path);
+  await uploadBytes(fileRef, file);
+  const url = await getDownloadURL(fileRef);
+  await setDoc(doc(getDB(), C.CONFIG, 'portero_individual'), {
+    photoURL: url,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+  return url;
+}
+
+export async function getPorteroPhoto() {
+  const snap = await getDoc(doc(getDB(), C.CONFIG, 'portero_individual'));
+  if (!snap.exists()) return null;
+  return snap.data().photoURL || null;
 }
 
 // ── PLANES DE DÍA ─────────────────────────────────
