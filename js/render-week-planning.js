@@ -3,18 +3,26 @@
 // ================================================
 import { printWeek, printAllWeeks }    from './render-print-week.js';
 import { porterosState, setPorterosState } from './porteros-state.js';
+import { PORTERO_TEAM }                from './porteros-constants.js';
 import {
   getMondayOfWeek, getWeekDays, addWeeks,
   formatWeekRange, getWeekKey, getMicroNumber,
   getMicroNumberForTeam, toDateKey, isSameDay,
 } from './dates.js';
-import { listenWeekPlans, upsertWeek, saveWeekMicro, getWeekMicro } from './firebase-service.js';
-import { renderDayColumn }             from './render-day-column.js';
-import { showError }                   from './utils.js';
+import {
+  listenWeekPlans, upsertWeek,
+  saveWeekMicro, getWeekMicro,
+  savePorteroName, getPorteroName,
+  uploadPorteroPhoto, getPorteroPhoto,
+} from './firebase-service.js';
+import { renderDayColumn } from './render-day-column.js';
+import { showError }       from './utils.js';
 
-let _unsubPlans  = null;
-let _microOverride = null; // número manual guardado en Firebase para esta semana+equipo
-window.__edpWeekPlans = {};
+let _unsubPlans    = null;
+let _microOverride = null;
+window.__edpWeekPlans      = {};
+window.__edpPorteroName    = '';
+window.__edpPorteroPhotoURL = null;
 
 export function renderWeekPlanning() {
   const panel = document.getElementById('view-semana');
@@ -30,27 +38,27 @@ export function renderWeekPlanning() {
     return;
   }
 
-  const monday = porterosState.currentMonday;
-  const days   = getWeekDays(monday);
-  const weekId = getWeekKey(monday);
-  const season = porterosState.activeSeason;
+  const isPortero = porterosState.activeTeam === PORTERO_TEAM.key;
+  const monday    = porterosState.currentMonday;
+  const days      = getWeekDays(monday);
+  const weekId    = getWeekKey(monday);
+  const season    = porterosState.activeSeason;
 
-  // Calcular microciclo base para este equipo
   const microBase = getMicroNumberForTeam(
     monday,
     porterosState.activeTeam,
     porterosState.microciclos,
   );
 
-  // Cargar override de Firebase si existe
+  // Cargar override de microciclo
   _microOverride = null;
   getWeekMicro(season.seasonKey, porterosState.activeTeam, weekId)
     .then(saved => {
       _microOverride = saved;
-      _renderNav(panel, monday, days, weekId, microBase, season);
+      _renderNav(panel, monday, days, weekId, microBase, season, isPortero);
     })
     .catch(() => {
-      _renderNav(panel, monday, days, weekId, microBase, season);
+      _renderNav(panel, monday, days, weekId, microBase, season, isPortero);
     });
 
   upsertWeek({
@@ -63,12 +71,10 @@ export function renderWeekPlanning() {
     label:       formatWeekRange(monday),
   }).catch(err => showError('Error guardando semana: ' + err.message));
 
-  // Renderizado provisional mientras carga el override
-  _renderNav(panel, monday, days, weekId, microBase, season);
+  _renderNav(panel, monday, days, weekId, microBase, season, isPortero);
 }
 
-function _renderNav(panel, monday, days, weekId, microBase, season) {
-  // Quitar nav anterior si existe
+function _renderNav(panel, monday, days, weekId, microBase, season, isPortero) {
   const oldNav = panel.querySelector('.week-nav');
   if (oldNav) oldNav.remove();
 
@@ -83,8 +89,7 @@ function _renderNav(panel, monday, days, weekId, microBase, season) {
       <div class="week-nav-sub" style="display:flex;align-items:center;gap:6px;justify-content:center;">
         <span>Microciclo</span>
         <input type="number" id="micro-input"
-          value="${microN}"
-          min="1" max="99"
+          value="${microN}" min="1" max="99"
           style="width:48px;text-align:center;font-size:11px;font-weight:700;
             border:1px solid var(--border-default);border-radius:4px;
             padding:1px 4px;background:var(--bg-raised);color:var(--text-primary);" />
@@ -100,13 +105,16 @@ function _renderNav(panel, monday, days, weekId, microBase, season) {
     <button class="btn btn-ghost no-print" id="btn-print-all" title="Imprimir todos los equipos">🖨️ Todos</button>
   `;
 
-  // Insertar nav al principio del panel
   const grid = panel.querySelector('#week-grid');
   if (grid) {
     panel.insertBefore(nav, grid);
   } else {
     panel.appendChild(nav);
-    _renderGrid(panel, monday, days, weekId, season);
+    if (isPortero) {
+      _renderPorteroHeader(panel, monday, days, weekId, season);
+    } else {
+      _renderGrid(panel, monday, days, weekId, season);
+    }
   }
 
   document.getElementById('btn-prev-week').addEventListener('click',  () => navigate(-1));
@@ -121,19 +129,110 @@ function _renderNav(panel, monday, days, weekId, microBase, season) {
     try {
       await saveWeekMicro(season.seasonKey, porterosState.activeTeam, weekId, val);
       _microOverride = val;
-      document.getElementById('btn-save-micro').textContent = '✓';
-      setTimeout(() => {
-        const btn = document.getElementById('btn-save-micro');
-        if (btn) btn.textContent = '✓';
-      }, 1000);
     } catch (err) {
       showError('Error guardando microciclo: ' + err.message);
     }
   });
 }
 
+// ── CABECERA PORTERO INDIVIDUAL ───────────────────
+
+function _renderPorteroHeader(panel, monday, days, weekId, season) {
+  const wrap = document.createElement('div');
+  wrap.id = 'portero-header-wrap';
+  wrap.className = 'no-print';
+  wrap.style.cssText = `
+    display:flex;align-items:center;gap:16px;
+    padding:12px clamp(8px,6vw,120px);
+    background:var(--bg-surface);
+    border-bottom:1px solid var(--border-default);
+    margin-bottom:8px;
+  `;
+
+  wrap.innerHTML = `
+    <div id="portero-photo-area" style="
+      width:80px;height:80px;border-radius:50%;
+      border:2px dashed var(--border-default);
+      overflow:hidden;display:flex;align-items:center;
+      justify-content:center;cursor:pointer;flex-shrink:0;
+      background:var(--bg-raised);position:relative;
+    " title="Haz clic para subir foto">
+      <span id="portero-photo-placeholder" style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px;">📷<br>Foto</span>
+      <img id="portero-photo-img" src="" alt="Foto portero"
+        style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0;" />
+      <input type="file" id="portero-photo-input" accept="image/*"
+        style="position:absolute;inset:0;opacity:0;cursor:pointer;" />
+    </div>
+
+    <div style="flex:1;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Portero</div>
+      <input type="text" id="portero-name-input"
+        placeholder="Nombre del portero..."
+        value="${window.__edpPorteroName || ''}"
+        style="font-size:22px;font-weight:800;border:none;outline:none;
+          background:transparent;color:var(--text-primary);width:100%;
+          border-bottom:2px solid var(--border-default);padding-bottom:4px;" />
+    </div>
+
+    <button id="btn-save-portero-name" class="btn btn-ghost btn-sm no-print"
+      style="font-size:11px;">Guardar nombre</button>
+  `;
+
+  panel.appendChild(wrap);
+
+  // Cargar foto y nombre desde Firebase
+  getPorteroPhoto().then(url => {
+    if (url) {
+      window.__edpPorteroPhotoURL = url;
+      _showPorteroPhoto(url);
+    }
+  }).catch(() => {});
+
+  getPorteroName().then(name => {
+    if (name) {
+      window.__edpPorteroName = name;
+      const input = document.getElementById('portero-name-input');
+      if (input) input.value = name;
+    }
+  }).catch(() => {});
+
+  // Guardar nombre
+  document.getElementById('btn-save-portero-name').addEventListener('click', async () => {
+    const name = document.getElementById('portero-name-input')?.value?.trim() || '';
+    try {
+      await savePorteroName(name);
+      window.__edpPorteroName = name;
+    } catch (err) {
+      showError('Error guardando nombre: ' + err.message);
+    }
+  });
+
+  // Subir foto
+  document.getElementById('portero-photo-input').addEventListener('change', async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const url = await uploadPorteroPhoto(file);
+      window.__edpPorteroPhotoURL = url;
+      _showPorteroPhoto(url);
+    } catch (err) {
+      showError('Error subiendo foto: ' + err.message);
+    }
+  });
+
+  _renderGrid(panel, monday, days, weekId, season);
+}
+
+function _showPorteroPhoto(url) {
+  const img         = document.getElementById('portero-photo-img');
+  const placeholder = document.getElementById('portero-photo-placeholder');
+  if (img) { img.src = url; img.style.display = 'block'; }
+  if (placeholder) placeholder.style.display = 'none';
+}
+
+// ── GRID SEMANAL ──────────────────────────────────
+
 function _renderGrid(panel, monday, days, weekId, season) {
-  // Grid
   const grid = document.createElement('div');
   grid.className = 'week-grid';
   grid.id = 'week-grid';
@@ -146,7 +245,6 @@ function _renderGrid(panel, monday, days, weekId, season) {
     grid.appendChild(col);
   });
 
-  // Escuchar Firebase
   if (_unsubPlans) { _unsubPlans(); _unsubPlans = null; }
 
   _unsubPlans = listenWeekPlans(
@@ -180,4 +278,5 @@ function goToday() {
   setPorterosState({ currentMonday: getMondayOfWeek(new Date()) });
   renderWeekPlanning();
 }
+
 
