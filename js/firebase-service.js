@@ -20,27 +20,19 @@ import {
   orderBy,
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
 import { firebaseConfig } from './firebase-config.js';
 import { FIREBASE_COLLECTIONS, PORTEROS_ICONS } from './porteros-constants.js';
 
 const C = FIREBASE_COLLECTIONS;
 
-let _app     = null;
-let _db      = null;
-let _storage = null;
+let _app = null;
+let _db  = null;
 
 export function initFirebase() {
   if (!_app) {
-    _app     = initializeApp(firebaseConfig);
-    _db      = getFirestore(_app);
-    _storage = getStorage(_app);
+    _app = initializeApp(firebaseConfig);
+    _db  = getFirestore(_app);
   }
   return true;
 }
@@ -48,11 +40,6 @@ export function initFirebase() {
 export function getDB() {
   if (!_db) throw new Error('Firebase no inicializado.');
   return _db;
-}
-
-export function getStorageInstance() {
-  if (!_storage) throw new Error('Firebase Storage no inicializado.');
-  return _storage;
 }
 
 // ── TEMPORADAS ────────────────────────────────────
@@ -114,13 +101,12 @@ export async function getWeekMicro(seasonKey, teamKey, weekId) {
 }
 
 // ── PORTERO INDIVIDUAL ────────────────────────────
-// Nombre editable del portero (guardado en config)
 
 export async function savePorteroName(name) {
   await setDoc(doc(getDB(), C.CONFIG, 'portero_individual'), {
     name,
     updatedAt: serverTimestamp(),
-  });
+  }, { merge: true });
 }
 
 export async function getPorteroName() {
@@ -129,24 +115,42 @@ export async function getPorteroName() {
   return snap.data().name || '';
 }
 
-// Foto del portero — sube a Firebase Storage y guarda URL en Firestore
-
+// Foto guardada como Base64 en Firestore (sin Storage)
 export async function uploadPorteroPhoto(file) {
-  const path    = `porteros/portero_individual/foto.jpg`;
-  const fileRef = storageRef(getStorageInstance(), path);
-  await uploadBytes(fileRef, file);
-  const url = await getDownloadURL(fileRef);
-  await setDoc(doc(getDB(), C.CONFIG, 'portero_individual'), {
-    photoURL: url,
-    updatedAt: serverTimestamp(),
-  }, { merge: true });
-  return url;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 300;
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+        else       { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const base64 = canvas.toDataURL('image/jpeg', 0.7);
+        try {
+          await setDoc(doc(getDB(), C.CONFIG, 'portero_individual'), {
+            photoBase64: base64,
+            updatedAt: serverTimestamp(),
+          }, { merge: true });
+          resolve(base64);
+        } catch (err) { reject(err); }
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export async function getPorteroPhoto() {
   const snap = await getDoc(doc(getDB(), C.CONFIG, 'portero_individual'));
   if (!snap.exists()) return null;
-  return snap.data().photoURL || null;
+  return snap.data().photoBase64 || null;
 }
 
 // ── PLANES DE DÍA ─────────────────────────────────
