@@ -4,11 +4,11 @@
 
 import { porterosState }                       from './porteros-state.js';
 import { BLOCK_TYPES, PORTEROS_TEAMS, PORTERO_TEAM } from './porteros-constants.js';
-import { getWeekDays, formatWeekRange, getMicroNumber, toDateKey, getDayName } from './dates.js';
+import { getWeekDays, formatWeekRange, getMicroNumber, toDateKey, getDayName, addWeeks } from './dates.js';
 import { safeText }                            from './utils.js';
 import { listenWeekPlans }                     from './firebase-service.js';
 
-export function printWeek() {
+export async function printWeek(numWeeks = 1) {
   const monday  = porterosState.currentMonday;
   const season  = porterosState.activeSeason;
   const team    = porterosState.activeTeam;
@@ -20,21 +20,42 @@ export function printWeek() {
   }
 
   const isPortero = team === PORTERO_TEAM.key;
-  const days      = getWeekDays(monday);
-  const microN    = getMicroNumber(monday, season.startDate);
-  const plans     = window.__edpWeekPlans || {};
   const teamFull  = isPortero
     ? (window.__edpPorteroName || 'Portero')
     : (PORTEROS_TEAMS.find(t => t.key === team)?.full || team);
   const photoURL  = isPortero ? (window.__edpPorteroPhotoURL || null) : null;
-  const weekLabel = formatWeekRange(monday);
 
-  const html = buildFullDoc(
-    [{ teamFull, plans, photoURL }],
-    { season, microN, monday, icons, weekLabel },
-    false
-  );
-  openPrint(html);
+  const loadingEl = document.createElement('div');
+  loadingEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;font-family:Segoe UI,sans-serif;';
+  loadingEl.textContent = `Cargando ${numWeeks} semana(s)...`;
+  document.body.appendChild(loadingEl);
+
+  try {
+    const sheetsData = [];
+
+    for (let i = 0; i < numWeeks; i++) {
+      const weekMonday = addWeeks(monday, i);
+      const weekId     = getWeekKey(weekMonday);
+      const weekLabel  = formatWeekRange(weekMonday);
+      const microN     = getMicroNumber(weekMonday, season.startDate);
+      const plans      = i === 0 && numWeeks === 1
+        ? (window.__edpWeekPlans || {})
+        : await loadTeamPlans(season.seasonKey, team, weekId, getWeekDays(weekMonday));
+
+      sheetsData.push({ teamFull, plans, photoURL, weekLabel, microN, monday: weekMonday });
+    }
+
+    const html = buildHTMLWrapper(
+      sheetsData.map(s => buildSheetHTML({ ...s, season, icons, logoSrc: icons.logo || './rm.png' })).join(''),
+      icons.logo || './rm.png',
+      sheetsData[0]?.weekLabel || ''
+    );
+    openPrint(html);
+  } catch (err) {
+    alert('Error: ' + err.message);
+  } finally {
+    document.body.removeChild(loadingEl);
+  }
 }
 
 export async function printAllWeeks() {
@@ -51,6 +72,7 @@ export async function printAllWeeks() {
   const microN    = getMicroNumber(monday, season.startDate);
   const weekLabel = formatWeekRange(monday);
   const weekId    = getWeekKey(monday);
+  const logoSrc   = icons.logo || './rm.png';
 
   const loadingEl = document.createElement('div');
   loadingEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;font-family:Segoe UI,sans-serif;';
@@ -66,20 +88,29 @@ export async function printAllWeeks() {
       teamFull: team.full,
       plans:    teamsData[i],
       photoURL: null,
+      weekLabel,
+      microN,
+      monday,
     }));
 
-    // Añadir portero individual al final si tiene nombre
     if (window.__edpPorteroName) {
       const porteroPlans = await loadTeamPlans(season.seasonKey, PORTERO_TEAM.key, weekId, days);
       sheetsData.push({
         teamFull: window.__edpPorteroName || 'Portero',
         plans:    porteroPlans,
         photoURL: window.__edpPorteroPhotoURL || null,
+        weekLabel,
+        microN,
+        monday,
       });
     }
 
-    const html = buildFullDoc(sheetsData, { season, microN, monday, icons, weekLabel }, true);
-    openPrint(html);
+    const coverHTML  = buildCover({ weekLabel, season, logoSrc });
+    const sheetsHTML = sheetsData.map(s =>
+      buildSheetHTML({ ...s, season, icons, logoSrc })
+    ).join('');
+
+    openPrint(buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, weekLabel));
   } catch (err) {
     alert('Error cargando planificaciones: ' + err.message);
   } finally {
@@ -119,18 +150,12 @@ function openPrint(html) {
   setTimeout(() => { win.print(); }, 600);
 }
 
-function buildFullDoc(sheetsData, { season, microN, monday, icons, weekLabel }, withCover) {
-  const logoSrc    = icons.logo || './rm.png';
-  const coverHTML  = withCover ? buildCover({ weekLabel, season, logoSrc }) : '';
-  const sheetsHTML = sheetsData.map(({ teamFull, plans, photoURL }) =>
-    buildSheetHTML({ teamFull, plans, photoURL, season, microN, monday, icons, weekLabel, logoSrc })
-  ).join('');
-
+function buildHTMLWrapper(contentHTML, logoSrc, title) {
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Microciclo - Departamento GK — ${safeText(weekLabel)}</title>
+  <title>Microciclo - Departamento GK — ${safeText(title)}</title>
   <style>
     @page { size: A4 landscape; margin: 10mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -154,9 +179,9 @@ function buildFullDoc(sheetsData, { season, microN, monday, icons, weekLabel }, 
       overflow: hidden; border: 3px solid #93c5fd;
     }
     .cover-logo img { width: 84px; height: 84px; object-fit: contain; }
-    .cover-title { font-size: 42px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.05em; text-align: center; }
-    .cover-sub   { font-size: 20px; font-weight: 600; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.08em; text-align: center; }
-    .cover-week  { font-size: 26px; font-weight: 800; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: rgba(255,255,255,0.12) !important; padding: 12px 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); text-align: center; }
+    .cover-title  { font-size: 42px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.05em; text-align: center; }
+    .cover-sub    { font-size: 20px; font-weight: 600; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.08em; text-align: center; }
+    .cover-week   { font-size: 26px; font-weight: 800; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: rgba(255,255,255,0.12) !important; padding: 12px 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); text-align: center; }
     .cover-season { font-size: 16px; font-weight: 600; color: #93c5fd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; text-align: center; }
 
     /* ── HEADER HOJA ── */
@@ -177,17 +202,13 @@ function buildFullDoc(sheetsData, { season, microN, monday, icons, weekLabel }, 
       overflow: hidden; flex-shrink: 0;
     }
     .print-header-logo img { width: 40px; height: 40px; object-fit: contain; }
-    .print-header-text { flex: 1; }
+    .print-header-text  { flex: 1; }
     .print-header-title { font-size: 14px; font-weight: 800; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.03em; }
     .print-header-sub   { font-size: 10px; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin-top: 2px; letter-spacing: 0.05em; }
+    .print-header-week  { font-size: 11px; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin-top: 3px; }
     .print-header-team  { font-size: 28px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; position: absolute; left: 50%; transform: translateX(-50%); }
 
-    /* ── FOTO PORTERO EN HEADER ── */
-    .print-portero-photo {
-      width: 52px; height: 52px; border-radius: 50%;
-      border: 2px solid #93c5fd;
-      overflow: hidden; flex-shrink: 0; margin-left: auto;
-    }
+    .print-portero-photo { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #93c5fd; overflow: hidden; flex-shrink: 0; margin-left: auto; }
     .print-portero-photo img { width: 100%; height: 100%; object-fit: cover; }
 
     /* ── GRID ── */
@@ -198,12 +219,12 @@ function buildFullDoc(sheetsData, { season, microN, monday, icons, weekLabel }, 
     .print-day-partido       { border-top: 2px solid #c9a227; }
     .print-day-descanso      { border-top: 2px solid #d1d9e6; }
     .print-day-torneo        { border-top: 2px solid #a78bfa; }
+    .print-day-seleccion     { border-top: 2px solid #10b981; }
 
     .print-day-header { background: #f0f4fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 4px 6px; border-bottom: 1px solid #d1d9e6; }
     .print-day-name   { font-size: 8px; font-weight: 700; letter-spacing: 0.1em; color: #666; text-transform: uppercase; }
     .print-day-number { font-size: 20px; font-weight: 800; line-height: 1; color: #111; }
     .print-day-date   { font-size: 8px; color: #888; }
-
     .print-day-content { flex: 1; padding: 5px; display: flex; flex-direction: column; gap: 4px; }
 
     .print-block { border: 1px solid #e8eef8; border-left: 2px solid #2563eb; border-radius: 4px; padding: 4px 5px; }
@@ -222,21 +243,21 @@ function buildFullDoc(sheetsData, { season, microN, monday, icons, weekLabel }, 
     .descanso { color: #9ca3af !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .torneo   { color: #a78bfa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .viaje    { color: #6ee7b7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .seleccion { color: #10b981 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
     .print-match-info { font-size: 8px; color: #333; padding: 3px 5px; line-height: 1.6; }
     .print-empty { font-size: 9px; color: #bbb; text-align: center; padding: 10px 4px; flex: 1; display: flex; align-items: center; justify-content: center; }
   </style>
 </head>
 <body>
-  ${coverHTML}
-  ${sheetsHTML}
+  ${contentHTML}
 </body>
 </html>`;
 }
 
 function buildCover({ weekLabel, season, logoSrc }) {
   const [start, end] = weekLabel.split(' — ');
-  const year = end?.split('/')?.pop() || '';
+  const year      = end?.split('/')?.pop() || '';
   const startFull = start && year ? `${start}/${year}` : start;
   const endFull   = end || '';
 
@@ -260,6 +281,10 @@ function buildSheetHTML({ teamFull, plans, photoURL, season, microN, monday, ico
     return buildDayHTML(date, plan, icons);
   }).join('');
 
+  const [start, end] = weekLabel.split(' — ');
+  const year      = end?.split('/')?.pop() || '';
+  const startFull = start && year ? `${start}/${year}` : start;
+
   const photoHTML = photoURL ? `
     <div class="print-portero-photo">
       <img src="${safeText(photoURL)}" alt="Portero" />
@@ -273,6 +298,7 @@ function buildSheetHTML({ teamFull, plans, photoURL, season, microN, monday, ico
         <div class="print-header-text">
           <div class="print-header-title">Microciclo - Departamento GK</div>
           <div class="print-header-sub">Planificación semanal de porteros</div>
+          <div class="print-header-week">📅 ${safeText(startFull)} - ${safeText(end || '')} &nbsp;·&nbsp; Microciclo ${microN}</div>
         </div>
         <div class="print-header-team">${safeText(teamFull)}</div>
         ${photoHTML}
@@ -306,8 +332,9 @@ function buildDayHTML(date, plan, icons) {
 
 function buildDayContent(dayType, plan, icons) {
   if (!dayType || dayType === 'libre') return `<div class="print-empty">Sin planificación</div>`;
-  if (dayType === 'descanso') return `<div class="print-vertical"><span class="print-vertical-word descanso">${'DESCANSO'.split('').join('<br>')}</span></div>`;
-  if (dayType === 'seleccion') return `<div class="print-vertical"><span class="print-vertical-word" style="color:#10b981 !important;">${'SELECCIÓN'.split('').join('<br>')}</span></div>`;
+  if (dayType === 'descanso')  return `<div class="print-vertical"><span class="print-vertical-word descanso">${'DESCANSO'.split('').join('<br>')}</span></div>`;
+  if (dayType === 'seleccion') return `<div class="print-vertical"><span class="print-vertical-word seleccion">${'SELECCIÓN'.split('').join('<br>')}</span></div>`;
+  if (dayType === 'viaje')     return `<div class="print-vertical"><span class="print-vertical-word viaje">${'VIAJE'.split('').join('<br>')}</span></div>`;
   if (dayType === 'partido') {
     const mi = plan?.matchInfo || {};
     return `
@@ -327,7 +354,6 @@ function buildDayContent(dayType, plan, icons) {
       ${ti.nombre ? `<div class="print-match-info"><div><strong>${safeText(ti.nombre)}</strong></div>${ti.lugar ? `<div>📍 ${safeText(ti.lugar)}</div>` : ''}</div>` : ''}
     `;
   }
-  if (dayType === 'viaje') return `<div class="print-vertical"><span class="print-vertical-word viaje">${'VIAJE'.split('').join('<br>')}</span></div>`;
   if (dayType === 'entrenamiento') {
     const blocks = plan?.blocks || [];
     if (blocks.length === 0) return `<div class="print-empty">Sin bloques</div>`;
