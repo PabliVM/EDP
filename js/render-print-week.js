@@ -307,6 +307,7 @@ function buildDayHTML(date, plan, icons) {
 function buildDayContent(dayType, plan, icons) {
   if (!dayType || dayType === 'libre') return `<div class="print-empty">Sin planificación</div>`;
   if (dayType === 'descanso') return `<div class="print-vertical"><span class="print-vertical-word descanso">${'DESCANSO'.split('').join('<br>')}</span></div>`;
+  if (dayType === 'seleccion') return `<div class="print-vertical"><span class="print-vertical-word" style="color:#10b981 !important;">${'SELECCIÓN'.split('').join('<br>')}</span></div>`;
   if (dayType === 'partido') {
     const mi = plan?.matchInfo || {};
     return `
