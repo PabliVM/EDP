@@ -543,3 +543,4 @@ body.dark #rm-main {
     color: #000 !important;
   }
 }
+.day-col[data-daytype="seleccion"] .day-special-label { color: #10b981; }
