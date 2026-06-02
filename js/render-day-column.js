@@ -64,6 +64,12 @@ function renderDayBody(body, date, plan, dayType, icons) {
     return;
   }
 
+  if (dayType === 'seleccion') {
+    renderSpecialDay(body, 'SELECCIÓN');
+    if (plan?.notes) body.insertAdjacentHTML('beforeend', `<div class="day-info-compact">${safeText(plan.notes)}</div>`);
+    return;
+  }
+
   if (dayType === 'partido') {
     renderSpecialDay(body, 'PARTIDO');
     if (plan?.matchInfo?.rival) {
@@ -117,13 +123,14 @@ function renderBlock(block, icons, date, plan) {
     </div>
     ${block.content ? `<div class="training-block-content">${safeText(block.content)}</div>` : ''}
     <div class="training-block-meta">
-     ${block.intensidad ? `<div style="font-size:10px;font-weight:700;margin-top:2px;">INTENSIDAD: <span class="badge badge-${block.intensidad.toLowerCase()}">${block.intensidad}</span></div>` : ''}
-${block.impactos   ? `<div style="font-size:10px;font-weight:700;margin-top:2px;">IMPACTOS: <span class="badge badge-${block.impactos.toLowerCase()}">${block.impactos}</span></div>`   : ''}
+      ${block.intensidad ? `<div style="font-size:10px;font-weight:700;margin-top:2px;">INTENSIDAD: <span class="badge badge-${block.intensidad.toLowerCase()}">${block.intensidad}</span></div>` : ''}
+      ${block.impactos   ? `<div style="font-size:10px;font-weight:700;margin-top:2px;">IMPACTOS: <span class="badge badge-${block.impactos.toLowerCase()}">${block.impactos}</span></div>`   : ''}
     </div>
   `;
 
   wrap.addEventListener('click', () => {
     if (block.blockType === 'informe_micro' || block.blockType === 'video_analisis') return;
+    if (block.blockType === 'hidroterapia'  || block.blockType === 'fisioterapia')   return;
     const blockIdx = plan?.blocks?.findIndex(b =>
       b.blockType === block.blockType && b.content === block.content
     ) ?? -1;
