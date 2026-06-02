@@ -24,6 +24,7 @@ export async function printWeek(numWeeks = 1) {
     ? (window.__edpPorteroName || 'Portero')
     : (PORTEROS_TEAMS.find(t => t.key === team)?.full || team);
   const photoURL  = isPortero ? (window.__edpPorteroPhotoURL || null) : null;
+  const logoSrc   = icons.logo || './rm.png';
 
   const loadingEl = document.createElement('div');
   loadingEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;font-family:Segoe UI,sans-serif;';
@@ -45,12 +46,14 @@ export async function printWeek(numWeeks = 1) {
       sheetsData.push({ teamFull, plans, photoURL, weekLabel, microN, monday: weekMonday });
     }
 
-    const html = buildHTMLWrapper(
-      sheetsData.map(s => buildSheetHTML({ ...s, season, icons, logoSrc: icons.logo || './rm.png' })).join(''),
-      icons.logo || './rm.png',
-      sheetsData[0]?.weekLabel || ''
-    );
-    openPrint(html);
+    const coverHTML  = isPortero
+      ? buildPorteroCover({ teamFull, weekLabel: sheetsData[0]?.weekLabel || '', season, logoSrc })
+      : '';
+    const sheetsHTML = sheetsData.map(s =>
+      buildSheetHTML({ ...s, season, icons, logoSrc })
+    ).join('');
+
+    openPrint(buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, sheetsData[0]?.weekLabel || ''));
   } catch (err) {
     alert('Error: ' + err.message);
   } finally {
@@ -179,10 +182,11 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
       overflow: hidden; border: 3px solid #93c5fd;
     }
     .cover-logo img { width: 84px; height: 84px; object-fit: contain; }
-    .cover-title  { font-size: 42px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.05em; text-align: center; }
-    .cover-sub    { font-size: 20px; font-weight: 600; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.08em; text-align: center; }
-    .cover-week   { font-size: 26px; font-weight: 800; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: rgba(255,255,255,0.12) !important; padding: 12px 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); text-align: center; }
-    .cover-season { font-size: 16px; font-weight: 600; color: #93c5fd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; text-align: center; }
+    .cover-title    { font-size: 42px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.05em; text-align: center; }
+    .cover-sub      { font-size: 20px; font-weight: 600; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.08em; text-align: center; }
+    .cover-name     { font-size: 32px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
+    .cover-week     { font-size: 26px; font-weight: 800; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: rgba(255,255,255,0.12) !important; padding: 12px 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); text-align: center; }
+    .cover-season   { font-size: 16px; font-weight: 600; color: #93c5fd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; text-align: center; }
 
     /* ── HEADER HOJA ── */
     .print-header {
@@ -239,10 +243,10 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
 
     .print-vertical { flex: 1; display: flex; align-items: center; justify-content: center; padding: 6px 0; }
     .print-vertical-word { font-size: 18px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; line-height: 1.3; }
-    .partido  { color: #c9a227 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .descanso { color: #9ca3af !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .torneo   { color: #a78bfa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .viaje    { color: #6ee7b7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .partido   { color: #c9a227 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .descanso  { color: #9ca3af !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .torneo    { color: #a78bfa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .viaje     { color: #6ee7b7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .seleccion { color: #10b981 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
     .print-match-info { font-size: 8px; color: #333; padding: 3px 5px; line-height: 1.6; }
@@ -266,6 +270,24 @@ function buildCover({ weekLabel, season, logoSrc }) {
       <div class="cover-logo"><img src="${logoSrc}" alt="RM" /></div>
       <div class="cover-title">Microciclo - Departamento GK</div>
       <div class="cover-sub">Planificación semanal de porteros</div>
+      <div class="cover-week">📅 ${safeText(startFull)} - ${safeText(endFull)}</div>
+      <div class="cover-season">${safeText(season.name || season.seasonKey)}</div>
+    </div>
+    <div class="page-break"></div>
+  `;
+}
+
+function buildPorteroCover({ teamFull, weekLabel, season, logoSrc }) {
+  const [start, end] = weekLabel.split(' — ');
+  const year      = end?.split('/')?.pop() || '';
+  const startFull = start && year ? `${start}/${year}` : start;
+  const endFull   = end || '';
+
+  return `
+    <div class="cover">
+      <div class="cover-logo"><img src="${logoSrc}" alt="RM" /></div>
+      <div class="cover-title">Microciclo - Departamento GK</div>
+      <div class="cover-name">${safeText(teamFull)}</div>
       <div class="cover-week">📅 ${safeText(startFull)} - ${safeText(endFull)}</div>
       <div class="cover-season">${safeText(season.name || season.seasonKey)}</div>
     </div>
@@ -386,5 +408,4 @@ function buildBlockHTML(block, icons) {
     </div>
   `;
 }
-
 
