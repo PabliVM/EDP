@@ -47,7 +47,13 @@ export async function printWeek(numWeeks = 1) {
     }
 
     const coverHTML  = isPortero
-      ? buildPorteroCover({ teamFull, weekLabel: sheetsData[0]?.weekLabel || '', season, logoSrc })
+      ? buildPorteroCover({
+          teamFull,
+          weekLabelFirst: sheetsData[0]?.weekLabel || '',
+          weekLabelLast:  sheetsData[sheetsData.length - 1]?.weekLabel || '',
+          season,
+          logoSrc,
+        })
       : '';
     const sheetsHTML = sheetsData.map(s =>
       buildSheetHTML({ ...s, season, icons, logoSrc })
@@ -277,11 +283,14 @@ function buildCover({ weekLabel, season, logoSrc }) {
   `;
 }
 
-function buildPorteroCover({ teamFull, weekLabel, season, logoSrc }) {
-  const [start, end] = weekLabel.split(' — ');
-  const year      = end?.split('/')?.pop() || '';
-  const startFull = start && year ? `${start}/${year}` : start;
-  const endFull   = end || '';
+function buildPorteroCover({ teamFull, weekLabelFirst, weekLabelLast, season, logoSrc }) {
+  // Fecha inicio: lunes de la primera semana
+  const [startFirst] = weekLabelFirst.split(' — ');
+  // Fecha fin: domingo de la última semana
+  const [, endLast]  = weekLabelLast.split(' — ');
+  const year      = endLast?.split('/')?.pop() || '';
+  const startFull = startFirst && year ? `${startFirst}/${year}` : startFirst;
+  const endFull   = endLast || '';
 
   return `
     <div class="cover">
@@ -408,4 +417,3 @@ function buildBlockHTML(block, icons) {
     </div>
   `;
 }
-
