@@ -1,20 +1,22 @@
 // ================================================
 // PORTEROS-CONSTANTS.JS
 // ================================================
-
 export const PORTEROS_TEAMS = [
-  { key: 'CAS', label: 'CAS', full: 'Castilla'     },
-  { key: 'RMC', label: 'RMC', full: 'Real Madrid C'     },
-  { key: 'JA', label: 'JA', full: 'Juvenil A'     },
-  { key: 'JB', label: 'JB', full: 'Juvenil B'     },
-  { key: 'JC', label: 'JC', full: 'Juvenil C'     },
-  { key: 'CA', label: 'CA', full: 'Cadete A'       },
-  { key: 'CB', label: 'CB', full: 'Cadete B'       },
-  { key: 'IA', label: 'IA', full: 'Infantil A'     },
-  { key: 'IB', label: 'IB', full: 'Infantil B'     },
-  { key: 'AA', label: 'AA', full: 'Alevín A'       },
-  { key: 'F7', label: 'F7', full: 'Fútbol 7'       },
+  { key: 'CAS', label: 'CAS', full: 'Castilla'      },
+  { key: 'RMC', label: 'RMC', full: 'Real Madrid C'  },
+  { key: 'JA',  label: 'JA',  full: 'Juvenil A'      },
+  { key: 'JB',  label: 'JB',  full: 'Juvenil B'      },
+  { key: 'JC',  label: 'JC',  full: 'Juvenil C'      },
+  { key: 'CA',  label: 'CA',  full: 'Cadete A'        },
+  { key: 'CB',  label: 'CB',  full: 'Cadete B'        },
+  { key: 'IA',  label: 'IA',  full: 'Infantil A'      },
+  { key: 'IB',  label: 'IB',  full: 'Infantil B'      },
+  { key: 'AA',  label: 'AA',  full: 'Alevín A'        },
+  { key: 'F7',  label: 'F7',  full: 'Fútbol 7'        },
 ];
+
+// Equipo especial portero individual — separado para no mezclarse con equipos normales
+export const PORTERO_TEAM = { key: 'PORTERO', label: 'PORTERO', full: 'Portero' };
 
 export const DAY_TYPES = [
   { key: 'entrenamiento', label: 'Entrenamiento',       badge: 'badge-blue' },
@@ -31,8 +33,8 @@ export const BLOCK_TYPES = [
   { key: 'informe_micro',       label: 'Informe contenidos micro', iconKey: 'informeMicro'       },
 ];
 
-export const INTENSIDADES = ['ALTA', 'MEDIA', 'BAJA'];
-export const IMPACTOS     = ['ALTA', 'MEDIA', 'BAJA'];
+export const INTENSIDADES   = ['ALTA', 'MEDIA', 'BAJA'];
+export const IMPACTOS       = ['ALTA', 'MEDIA', 'BAJA'];
 
 export const STATUS_OPTIONS = [
   { key: 'borrador',    label: 'Borrador'    },
@@ -58,3 +60,4 @@ export const FIREBASE_COLLECTIONS = {
 export const DAY_NAMES_ES = [
   'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado',
 ];
+
