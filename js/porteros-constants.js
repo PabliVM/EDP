@@ -15,7 +15,6 @@ export const PORTEROS_TEAMS = [
   { key: 'F7',  label: 'F7',  full: 'Fútbol 7'        },
 ];
 
-// Equipo especial portero individual — separado para no mezclarse con equipos normales
 export const PORTERO_TEAM = { key: 'PORTERO', label: 'PORTERO', full: 'Portero' };
 
 export const DAY_TYPES = [
@@ -23,6 +22,7 @@ export const DAY_TYPES = [
   { key: 'partido',       label: 'Partido',             badge: 'badge-gold' },
   { key: 'descanso',      label: 'Descanso',            badge: 'badge-gray' },
   { key: 'torneo',        label: 'Torneo',              badge: 'badge-gray' },
+  { key: 'seleccion',     label: 'Selección',           badge: 'badge-gray' },
   { key: 'libre',         label: 'Libre / Sin definir', badge: 'badge-gray' },
 ];
 
@@ -31,6 +31,8 @@ export const BLOCK_TYPES = [
   { key: 'entrenamiento_campo', label: 'Entrenamiento en Campo',   iconKey: 'entrenamientoCampo' },
   { key: 'video_analisis',      label: 'Video análisis',           iconKey: 'videoAnalisis'      },
   { key: 'informe_micro',       label: 'Informe contenidos micro', iconKey: 'informeMicro'       },
+  { key: 'hidroterapia',        label: 'Hidroterapia',             iconKey: 'hidroterapia'       },
+  { key: 'fisioterapia',        label: 'Fisioterapia',             iconKey: 'fisioterapia'       },
 ];
 
 export const INTENSIDADES   = ['ALTA', 'MEDIA', 'BAJA'];
@@ -48,6 +50,8 @@ export const PORTEROS_ICONS = {
   entrenamientoCampo: './assets/icons/balon.png',
   videoAnalisis:      './assets/icons/video.png',
   informeMicro:       './assets/icons/informe.png',
+  hidroterapia:       './assets/icons/agua.png',
+  fisioterapia:       './assets/icons/salud.png',
 };
 
 export const FIREBASE_COLLECTIONS = {
@@ -60,31 +64,3 @@ export const FIREBASE_COLLECTIONS = {
 export const DAY_NAMES_ES = [
   'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado',
 ];
-
-export const BLOCK_TYPES = [
-  { key: 'preparacion_fisica',  label: 'Preparación Física',      iconKey: 'preparacionFisica'  },
-  { key: 'entrenamiento_campo', label: 'Entrenamiento en Campo',   iconKey: 'entrenamientoCampo' },
-  { key: 'video_analisis',      label: 'Video análisis',           iconKey: 'videoAnalisis'      },
-  { key: 'informe_micro',       label: 'Informe contenidos micro', iconKey: 'informeMicro'       },
-  { key: 'hidroterapia',        label: 'Hidroterapia',             iconKey: 'hidroterapia'       },
-  { key: 'fisioterapia',        label: 'Fisioterapia',             iconKey: 'fisioterapia'       },
-];
-
-export const DAY_TYPES = [
-  { key: 'entrenamiento', label: 'Entrenamiento',       badge: 'badge-blue' },
-  { key: 'partido',       label: 'Partido',             badge: 'badge-gold' },
-  { key: 'descanso',      label: 'Descanso',            badge: 'badge-gray' },
-  { key: 'torneo',        label: 'Torneo',              badge: 'badge-gray' },
-  { key: 'seleccion',     label: 'Selección',           badge: 'badge-gray' },
-  { key: 'libre',         label: 'Libre / Sin definir', badge: 'badge-gray' },
-];
-
-export const PORTEROS_ICONS = {
-  logo:               './rm.png',
-  preparacionFisica:  './assets/icons/brazo.png',
-  entrenamientoCampo: './assets/icons/balon.png',
-  videoAnalisis:      './assets/icons/video.png',
-  informeMicro:       './assets/icons/informe.png',
-  hidroterapia:       './assets/icons/agua.png',
-  fisioterapia:       './assets/icons/salud.png',
-};
