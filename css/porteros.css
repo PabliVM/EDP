@@ -544,3 +544,13 @@ body.dark #rm-main {
   }
 }
 .day-col[data-daytype="seleccion"] .day-special-label { color: #10b981; }
+
+.day-obs {
+  font-size: 10px;
+  color: var(--text-secondary);
+  padding: 4px 6px;
+  border-top: 1px dashed var(--border-subtle);
+  margin-top: 4px;
+  font-style: italic;
+  line-height: 1.4;
+}
