@@ -14,6 +14,7 @@ import {
   saveWeekMicro, getWeekMicro,
   savePorteroName, getPorteroName,
   uploadPorteroPhoto, getPorteroPhoto,
+  saveWeekNotes, getWeekNotes,
 } from './firebase-service.js';
 import { renderDayColumn } from './render-day-column.js';
 import { showError }       from './utils.js';
@@ -50,7 +51,6 @@ export function renderWeekPlanning() {
     porterosState.microciclos,
   );
 
-  // Cargar override de microciclo
   _microOverride = null;
   getWeekMicro(season.seasonKey, porterosState.activeTeam, weekId)
     .then(saved => {
@@ -110,6 +110,32 @@ function _renderNav(panel, monday, days, weekId, microBase, season, isPortero) {
     panel.insertBefore(nav, grid);
   } else {
     panel.appendChild(nav);
+
+    // ── OBS SEMANA ──
+    const obsWrap = document.createElement('div');
+    obsWrap.id = 'week-obs-wrap';
+    obsWrap.className = 'no-print';
+    obsWrap.style.cssText = 'padding:6px clamp(8px,6vw,120px);display:flex;gap:8px;align-items:flex-start;background:var(--bg-surface);border-bottom:1px solid var(--border-default);';
+    obsWrap.innerHTML = `
+      <textarea id="week-obs-input" rows="2" placeholder="Observaciones del microciclo..."
+        style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border-default);
+          border-radius:var(--radius-sm);background:var(--bg-raised);color:var(--text-primary);
+          resize:none;font-family:var(--font-sans);"></textarea>
+      <button id="btn-save-week-obs" class="btn btn-ghost btn-sm no-print" style="font-size:11px;white-space:nowrap;">Guardar obs.</button>
+    `;
+    panel.appendChild(obsWrap);
+
+    getWeekNotes(season.seasonKey, porterosState.activeTeam, weekId).then(notes => {
+      const ta = document.getElementById('week-obs-input');
+      if (ta) ta.value = notes || '';
+    }).catch(() => {});
+
+    document.getElementById('btn-save-week-obs').addEventListener('click', async () => {
+      const notes = document.getElementById('week-obs-input')?.value || '';
+      try { await saveWeekNotes(season.seasonKey, porterosState.activeTeam, weekId, notes); }
+      catch (err) { showError('Error: ' + err.message); }
+    });
+
     if (isPortero) {
       _renderPorteroHeader(panel, monday, days, weekId, season);
     } else {
@@ -121,10 +147,10 @@ function _renderNav(panel, monday, days, weekId, microBase, season, isPortero) {
   document.getElementById('btn-next-week').addEventListener('click',  () => navigate(1));
   document.getElementById('btn-today-week').addEventListener('click', () => goToday());
   document.getElementById('btn-print-week').addEventListener('click', () => {
-  const n = parseInt(prompt('¿Cuántas semanas quieres imprimir? (desde la semana actual)', '1'));
-  if (isNaN(n) || n < 1) return;
-  printWeek(n);
-});
+    const n = parseInt(prompt('¿Cuántas semanas quieres imprimir? (desde la semana actual)', '1'));
+    if (isNaN(n) || n < 1) return;
+    printWeek(n);
+  });
   document.getElementById('btn-print-all').addEventListener('click',  () => printAllWeeks());
 
   document.getElementById('btn-save-micro').addEventListener('click', async () => {
@@ -184,7 +210,6 @@ function _renderPorteroHeader(panel, monday, days, weekId, season) {
 
   panel.appendChild(wrap);
 
-  // Cargar foto y nombre desde Firebase
   getPorteroPhoto().then(url => {
     if (url) {
       window.__edpPorteroPhotoURL = url;
@@ -200,7 +225,6 @@ function _renderPorteroHeader(panel, monday, days, weekId, season) {
     }
   }).catch(() => {});
 
-  // Guardar nombre
   document.getElementById('btn-save-portero-name').addEventListener('click', async () => {
     const name = document.getElementById('portero-name-input')?.value?.trim() || '';
     try {
@@ -211,7 +235,6 @@ function _renderPorteroHeader(panel, monday, days, weekId, season) {
     }
   });
 
-  // Subir foto
   document.getElementById('portero-photo-input').addEventListener('change', async e => {
     const file = e.target.files?.[0];
     if (!file) return;
