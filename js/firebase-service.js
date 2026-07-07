@@ -216,3 +216,15 @@ export async function deleteDocument(collectionName, id) {
   await deleteDoc(doc(getDB(), collectionName, id));
 }
 
+export async function saveWeekNotes(seasonKey, teamKey, weekId, notes) {
+  const id = `${seasonKey.replace(/\//g, '-')}_${teamKey}_${weekId}`;
+  await setDoc(doc(getDB(), 'porteros_week_notes', id), {
+    seasonKey, teamKey, weekId, notes, updatedAt: serverTimestamp(),
+  });
+}
+
+export async function getWeekNotes(seasonKey, teamKey, weekId) {
+  const id   = `${seasonKey.replace(/\//g, '-')}_${teamKey}_${weekId}`;
+  const snap = await getDoc(doc(getDB(), 'porteros_week_notes', id));
+  return snap.exists() ? (snap.data().notes || '') : '';
+}
