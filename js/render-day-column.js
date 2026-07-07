@@ -100,6 +100,14 @@ function renderDayBody(body, date, plan, dayType, icons) {
     }
     appendAddBtn(body, date, plan, '＋ Añadir bloque');
   }
+
+  // Observaciones del día
+  if (plan?.notes) {
+    const obs = document.createElement('div');
+    obs.className = 'day-obs';
+    obs.textContent = plan.notes;
+    body.appendChild(obs);
+  }
 }
 
 function renderSpecialDay(body, label) {
