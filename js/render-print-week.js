@@ -6,7 +6,7 @@ import { porterosState }                       from './porteros-state.js';
 import { BLOCK_TYPES, PORTEROS_TEAMS, PORTERO_TEAM } from './porteros-constants.js';
 import { getWeekDays, formatWeekRange, getMicroNumber, toDateKey, getDayName, addWeeks } from './dates.js';
 import { safeText }                            from './utils.js';
-import { listenWeekPlans }                     from './firebase-service.js';
+import { listenWeekPlans, getWeekNotes }       from './firebase-service.js';
 
 export async function printWeek(numWeeks = 1) {
   const monday  = porterosState.currentMonday;
@@ -42,8 +42,9 @@ export async function printWeek(numWeeks = 1) {
       const plans      = i === 0 && numWeeks === 1
         ? (window.__edpWeekPlans || {})
         : await loadTeamPlans(season.seasonKey, team, weekId, getWeekDays(weekMonday));
+      const weekObs    = await getWeekNotes(season.seasonKey, team, weekId).catch(() => '');
 
-      sheetsData.push({ teamFull, plans, photoURL, weekLabel, microN, monday: weekMonday });
+      sheetsData.push({ teamFull, plans, photoURL, weekLabel, microN, monday: weekMonday, weekObs });
     }
 
     const coverHTML  = isPortero
@@ -93,17 +94,19 @@ export async function printAllWeeks() {
       PORTEROS_TEAMS.map(team => loadTeamPlans(season.seasonKey, team.key, weekId, days))
     );
 
-    const sheetsData = PORTEROS_TEAMS.map((team, i) => ({
+    const sheetsData = await Promise.all(PORTEROS_TEAMS.map(async (team, i) => ({
       teamFull: team.full,
       plans:    teamsData[i],
       photoURL: null,
       weekLabel,
       microN,
       monday,
-    }));
+      weekObs: await getWeekNotes(season.seasonKey, team.key, weekId).catch(() => ''),
+    })));
 
     if (window.__edpPorteroName) {
       const porteroPlans = await loadTeamPlans(season.seasonKey, PORTERO_TEAM.key, weekId, days);
+      const porteroObs   = await getWeekNotes(season.seasonKey, PORTERO_TEAM.key, weekId).catch(() => '');
       sheetsData.push({
         teamFull: window.__edpPorteroName || 'Portero',
         plans:    porteroPlans,
@@ -111,6 +114,7 @@ export async function printAllWeeks() {
         weekLabel,
         microN,
         monday,
+        weekObs: porteroObs,
       });
     }
 
@@ -169,68 +173,35 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
     @page { size: A4 landscape; margin: 10mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { font-family: 'Segoe UI', sans-serif; font-size: 10px; color: #111; background: #fff; }
-
     .page-break { page-break-after: always; break-after: page; height: 0; }
 
-    /* ── PORTADA ── */
-    .cover {
-      background: #1d4ed8 !important;
-      -webkit-print-color-adjust: exact; print-color-adjust: exact;
-      width: 100%; height: 190mm;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 24px;
-    }
-    .cover-logo {
-      width: 100px; height: 100px; border-radius: 50%;
-      background: rgba(255,255,255,0.95) !important;
-      -webkit-print-color-adjust: exact; print-color-adjust: exact;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; border: 3px solid #93c5fd;
-    }
+    .cover { background: #1d4ed8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; width: 100%; height: 190mm; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+    .cover-logo { width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.95) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #93c5fd; }
     .cover-logo img { width: 84px; height: 84px; object-fit: contain; }
-    .cover-title    { font-size: 42px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.05em; text-align: center; }
-    .cover-sub      { font-size: 20px; font-weight: 600; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.08em; text-align: center; }
-    .cover-name     { font-size: 32px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
-    .cover-week     { font-size: 26px; font-weight: 800; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: rgba(255,255,255,0.12) !important; padding: 12px 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); text-align: center; }
-    .cover-season   { font-size: 16px; font-weight: 600; color: #93c5fd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; text-align: center; }
+    .cover-title  { font-size: 42px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.05em; text-align: center; }
+    .cover-sub    { font-size: 20px; font-weight: 600; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.08em; text-align: center; }
+    .cover-name   { font-size: 32px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
+    .cover-week   { font-size: 26px; font-weight: 800; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: rgba(255,255,255,0.12) !important; padding: 12px 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); text-align: center; }
+    .cover-season { font-size: 16px; font-weight: 600; color: #93c5fd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; text-align: center; }
 
-    /* ── HEADER HOJA ── */
-    .print-header {
-      background: #1d4ed8 !important;
-      -webkit-print-color-adjust: exact; print-color-adjust: exact;
-      border-bottom: 3px solid #93c5fd;
-      padding: 10px 16px;
-      display: flex; align-items: center; gap: 16px;
-      margin-bottom: 10px; position: relative;
-    }
-    .print-header-logo {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: rgba(255,255,255,0.9) !important;
-      -webkit-print-color-adjust: exact; print-color-adjust: exact;
-      border: 1.5px solid #93c5fd;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; flex-shrink: 0;
-    }
+    .print-header { background: #1d4ed8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-bottom: 3px solid #93c5fd; padding: 10px 16px; display: flex; align-items: center; gap: 16px; margin-bottom: 10px; position: relative; }
+    .print-header-logo { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.9) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1.5px solid #93c5fd; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
     .print-header-logo img { width: 40px; height: 40px; object-fit: contain; }
     .print-header-text  { flex: 1; }
     .print-header-title { font-size: 14px; font-weight: 800; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.03em; }
     .print-header-sub   { font-size: 10px; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin-top: 2px; letter-spacing: 0.05em; }
     .print-header-week  { font-size: 11px; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin-top: 3px; }
     .print-header-team  { font-size: 28px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; position: absolute; left: 50%; transform: translateX(-50%); }
-
     .print-portero-photo { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #93c5fd; overflow: hidden; flex-shrink: 0; margin-left: auto; }
     .print-portero-photo img { width: 100%; height: 100%; object-fit: cover; }
 
-    /* ── GRID ── */
     .print-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-
     .print-day { border: 1px solid #d1d9e6; border-radius: 6px; overflow: hidden; min-height: 160px; display: flex; flex-direction: column; background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .print-day-entrenamiento { border-top: 2px solid #2563eb; }
     .print-day-partido       { border-top: 2px solid #c9a227; }
     .print-day-descanso      { border-top: 2px solid #d1d9e6; }
     .print-day-torneo        { border-top: 2px solid #a78bfa; }
     .print-day-seleccion     { border-top: 2px solid #10b981; }
-
     .print-day-header { background: #f0f4fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 4px 6px; border-bottom: 1px solid #d1d9e6; }
     .print-day-name   { font-size: 8px; font-weight: 700; letter-spacing: 0.1em; color: #666; text-transform: uppercase; }
     .print-day-number { font-size: 20px; font-weight: 800; line-height: 1; color: #111; }
@@ -257,6 +228,10 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
 
     .print-match-info { font-size: 8px; color: #333; padding: 3px 5px; line-height: 1.6; }
     .print-empty { font-size: 9px; color: #bbb; text-align: center; padding: 10px 4px; flex: 1; display: flex; align-items: center; justify-content: center; }
+
+    .print-obs { margin-top: 8px; padding: 6px 8px; border: 1px solid #d1d9e6; border-left: 3px solid #2563eb; border-radius: 4px; background: #f8fafd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .print-obs-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #666; margin-bottom: 3px; }
+    .print-obs-text  { font-size: 9px; color: #333; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -270,7 +245,6 @@ function buildCover({ weekLabel, season, logoSrc }) {
   const year      = end?.split('/')?.pop() || '';
   const startFull = start && year ? `${start}/${year}` : start;
   const endFull   = end || '';
-
   return `
     <div class="cover">
       <div class="cover-logo"><img src="${logoSrc}" alt="RM" /></div>
@@ -284,14 +258,11 @@ function buildCover({ weekLabel, season, logoSrc }) {
 }
 
 function buildPorteroCover({ teamFull, weekLabelFirst, weekLabelLast, season, logoSrc }) {
-  // Fecha inicio: lunes de la primera semana
   const [startFirst] = weekLabelFirst.split(' — ');
-  // Fecha fin: domingo de la última semana
   const [, endLast]  = weekLabelLast.split(' — ');
   const year      = endLast?.split('/')?.pop() || '';
   const startFull = startFirst && year ? `${startFirst}/${year}` : startFirst;
   const endFull   = endLast || '';
-
   return `
     <div class="cover">
       <div class="cover-logo"><img src="${logoSrc}" alt="RM" /></div>
@@ -304,7 +275,7 @@ function buildPorteroCover({ teamFull, weekLabelFirst, weekLabelLast, season, lo
   `;
 }
 
-function buildSheetHTML({ teamFull, plans, photoURL, season, microN, monday, icons, weekLabel, logoSrc }) {
+function buildSheetHTML({ teamFull, plans, photoURL, weekObs, season, microN, monday, icons, weekLabel, logoSrc }) {
   const days     = getWeekDays(monday);
   const daysHTML = days.map(date => {
     const key  = toDateKey(date);
@@ -322,6 +293,13 @@ function buildSheetHTML({ teamFull, plans, photoURL, season, microN, monday, ico
     </div>
   ` : '';
 
+  const obsHTML = weekObs ? `
+    <div class="print-obs">
+      <div class="print-obs-label">Observaciones del microciclo</div>
+      <div class="print-obs-text">${safeText(weekObs)}</div>
+    </div>
+  ` : '';
+
   return `
     <div>
       <div class="print-header">
@@ -335,6 +313,7 @@ function buildSheetHTML({ teamFull, plans, photoURL, season, microN, monday, ico
         ${photoHTML}
       </div>
       <div class="print-grid">${daysHTML}</div>
+      ${obsHTML}
     </div>
     <div class="page-break"></div>
   `;
