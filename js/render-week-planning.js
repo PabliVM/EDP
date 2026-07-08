@@ -111,17 +111,30 @@ function _renderNav(panel, monday, days, weekId, microBase, season, isPortero) {
   } else {
     panel.appendChild(nav);
 
-    // ── OBS SEMANA ──
+    if (isPortero) {
+      _renderPorteroHeader(panel, monday, days, weekId, season);
+    } else {
+      _renderGrid(panel, monday, days, weekId, season);
+    }
+
+    // ── OBS SEMANA — debajo del grid ──
     const obsWrap = document.createElement('div');
     obsWrap.id = 'week-obs-wrap';
-    obsWrap.className = 'no-print';
-    obsWrap.style.cssText = 'padding:6px clamp(8px,6vw,120px);display:flex;gap:8px;align-items:flex-start;background:var(--bg-surface);border-bottom:1px solid var(--border-default);';
+    obsWrap.style.cssText = 'padding:12px clamp(8px,6vw,120px) 20px;';
     obsWrap.innerHTML = `
-      <textarea id="week-obs-input" rows="2" placeholder="Observaciones del microciclo..."
-        style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--border-default);
-          border-radius:var(--radius-sm);background:var(--bg-raised);color:var(--text-primary);
-          resize:none;font-family:var(--font-sans);"></textarea>
-      <button id="btn-save-week-obs" class="btn btn-ghost btn-sm no-print" style="font-size:11px;white-space:nowrap;">Guardar obs.</button>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;
+        letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;">
+        Observaciones del microciclo
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="week-obs-input" rows="3"
+          placeholder="Escribe aquí las observaciones de esta semana..."
+          style="flex:1;font-size:12px;padding:8px;border:1px solid var(--border-default);
+            border-radius:var(--radius-sm);background:var(--bg-raised);color:var(--text-primary);
+            resize:vertical;font-family:var(--font-sans);line-height:1.5;"></textarea>
+        <button id="btn-save-week-obs" class="btn btn-ghost btn-sm no-print"
+          style="font-size:11px;white-space:nowrap;">Guardar</button>
+      </div>
     `;
     panel.appendChild(obsWrap);
 
@@ -135,12 +148,6 @@ function _renderNav(panel, monday, days, weekId, microBase, season, isPortero) {
       try { await saveWeekNotes(season.seasonKey, porterosState.activeTeam, weekId, notes); }
       catch (err) { showError('Error: ' + err.message); }
     });
-
-    if (isPortero) {
-      _renderPorteroHeader(panel, monday, days, weekId, season);
-    } else {
-      _renderGrid(panel, monday, days, weekId, season);
-    }
   }
 
   document.getElementById('btn-prev-week').addEventListener('click',  () => navigate(-1));
