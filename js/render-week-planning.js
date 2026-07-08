@@ -21,8 +21,8 @@ import { showError }       from './utils.js';
 
 let _unsubPlans    = null;
 let _microOverride = null;
-window.__edpWeekPlans      = {};
-window.__edpPorteroName    = '';
+window.__edpWeekPlans       = {};
+window.__edpPorteroName     = '';
 window.__edpPorteroPhotoURL = null;
 
 export function renderWeekPlanning() {
