@@ -9,12 +9,20 @@ import { safeText }                            from './utils.js';
 import { listenWeekPlans, getWeekNotes }       from './firebase-service.js';
 
 export async function printWeek(numWeeks = 1) {
+  // Abrir ventana ANTES de cualquier await
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('El navegador bloqueó la ventana emergente. Permite popups para esta página.');
+    return;
+  }
+
   const monday  = porterosState.currentMonday;
   const season  = porterosState.activeSeason;
   const team    = porterosState.activeTeam;
   const icons   = porterosState.icons || {};
 
   if (!monday || !season || !team) {
+    win.close();
     alert('Selecciona equipo y temporada antes de imprimir.');
     return;
   }
@@ -60,8 +68,13 @@ export async function printWeek(numWeeks = 1) {
       buildSheetHTML({ ...s, season, icons, logoSrc })
     ).join('');
 
-    openPrint(buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, sheetsData[0]?.weekLabel || ''));
+    const html = buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, sheetsData[0]?.weekLabel || '');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 600);
   } catch (err) {
+    win.close();
     alert('Error: ' + err.message);
   } finally {
     document.body.removeChild(loadingEl);
@@ -69,11 +82,19 @@ export async function printWeek(numWeeks = 1) {
 }
 
 export async function printAllWeeks() {
+  // Abrir ventana ANTES de cualquier await
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('El navegador bloqueó la ventana emergente. Permite popups para esta página.');
+    return;
+  }
+
   const monday  = porterosState.currentMonday;
   const season  = porterosState.activeSeason;
   const icons   = porterosState.icons || {};
 
   if (!monday || !season) {
+    win.close();
     alert('Selecciona una temporada activa antes de imprimir.');
     return;
   }
@@ -123,8 +144,13 @@ export async function printAllWeeks() {
       buildSheetHTML({ ...s, season, icons, logoSrc })
     ).join('');
 
-    openPrint(buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, weekLabel));
+    const html = buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, weekLabel);
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 600);
   } catch (err) {
+    win.close();
     alert('Error cargando planificaciones: ' + err.message);
   } finally {
     document.body.removeChild(loadingEl);
@@ -153,14 +179,6 @@ function getWeekKey(monday) {
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const wn = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
   return `${y}-W${wn.toString().padStart(2, '0')}`;
-}
-
-function openPrint(html) {
-  const win = window.open('', '_blank');
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  setTimeout(() => { win.print(); }, 600);
 }
 
 function buildHTMLWrapper(contentHTML, logoSrc, title) {
