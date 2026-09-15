@@ -17,6 +17,8 @@ const _state = {
   icons:         null,
   microciclos:   {},
   conceptos:     {},
+  mesociclosF7:  {},
+  currentMeso:   null,
 };
 
 export const porterosState = _state;
