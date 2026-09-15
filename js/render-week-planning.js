@@ -57,14 +57,17 @@ export function renderWeekPlanning() {
 
   const microInfo = getMicroInfoForTeam(monday, porterosState.activeTeam, porterosState.microciclos);
   const microBase  = microInfo.number;
+  const teamAtRender = porterosState.activeTeam;
 
   _microOverride = null;
   getWeekMicro(season.seasonKey, porterosState.activeTeam, weekId)
     .then(saved => {
+      if (porterosState.activeTeam !== teamAtRender || porterosState.currentView !== 'semana') return;
       _microOverride = saved;
       _renderNav(panel, monday, days, weekId, microBase, season, isPortero, microInfo.phase);
     })
     .catch(() => {
+      if (porterosState.activeTeam !== teamAtRender || porterosState.currentView !== 'semana') return;
       _renderNav(panel, monday, days, weekId, microBase, season, isPortero, microInfo.phase);
     });
 
