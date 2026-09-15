@@ -4,7 +4,7 @@
 
 import { porterosState }                       from './porteros-state.js';
 import { BLOCK_TYPES, PORTEROS_TEAMS, PORTERO_TEAM } from './porteros-constants.js';
-import { getWeekDays, formatWeekRange, getMicroNumber, toDateKey, getDayName, addWeeks, getMesoWeeks, formatDate } from './dates.js';
+import { getWeekDays, formatWeekRange, getMicroNumber, getMicroInfoForTeam, toDateKey, getDayName, addWeeks, getMesoWeeks, formatDate } from './dates.js';
 import { safeText }                            from './utils.js';
 import { listenWeekPlans, getWeekNotes }       from './firebase-service.js';
 
@@ -46,7 +46,7 @@ export async function printWeek(numWeeks = 1) {
       const weekMonday = addWeeks(monday, i);
       const weekId     = getWeekKey(weekMonday);
       const weekLabel  = formatWeekRange(weekMonday);
-      const microN     = getMicroNumber(weekMonday, season.startDate);
+      const microN     = getMicroInfoForTeam(weekMonday, team, porterosState.microciclos).number;
       const plans      = i === 0 && numWeeks === 1
         ? (window.__edpWeekPlans || {})
         : await loadTeamPlans(season.seasonKey, team, weekId, getWeekDays(weekMonday));
@@ -100,7 +100,6 @@ export async function printAllWeeks() {
   }
 
   const days      = getWeekDays(monday);
-  const microN    = getMicroNumber(monday, season.startDate);
   const weekLabel = formatWeekRange(monday);
   const weekId    = getWeekKey(monday);
   const logoSrc   = icons.logo || './rm.png';
@@ -120,7 +119,7 @@ export async function printAllWeeks() {
       plans:    teamsData[i],
       photoURL: null,
       weekLabel,
-      microN,
+      microN: getMicroInfoForTeam(monday, team.key, porterosState.microciclos).number,
       monday,
       weekObs: await getWeekNotes(season.seasonKey, team.key, weekId).catch(() => ''),
     })));
@@ -133,7 +132,7 @@ export async function printAllWeeks() {
         plans:    porteroPlans,
         photoURL: window.__edpPorteroPhotoURL || null,
         weekLabel,
-        microN,
+        microN: getMicroInfoForTeam(monday, PORTERO_TEAM.key, porterosState.microciclos).number,
         monday,
         weekObs: porteroObs,
       });
