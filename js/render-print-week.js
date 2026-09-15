@@ -4,7 +4,7 @@
 
 import { porterosState }                       from './porteros-state.js';
 import { BLOCK_TYPES, PORTEROS_TEAMS, PORTERO_TEAM } from './porteros-constants.js';
-import { getWeekDays, formatWeekRange, getMicroNumber, toDateKey, getDayName, addWeeks } from './dates.js';
+import { getWeekDays, formatWeekRange, getMicroNumber, toDateKey, getDayName, addWeeks, getMesoWeeks, formatDate } from './dates.js';
 import { safeText }                            from './utils.js';
 import { listenWeekPlans, getWeekNotes }       from './firebase-service.js';
 
@@ -412,5 +412,75 @@ function buildBlockHTML(block, icons) {
         </div>
       ` : ''}
     </div>
+  `;
+}
+
+// ── IMPRESIÓN MESOCICLO (F7) ──────────────────────
+
+export async function printMesociclo() {
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('El navegador bloqueó la ventana emergente. Permite popups para esta página.');
+    return;
+  }
+
+  const season  = porterosState.activeSeason;
+  const mesoKey = porterosState.currentMeso;
+  const meso    = porterosState.mesociclosF7?.[mesoKey];
+  const icons   = porterosState.icons || {};
+
+  if (!season || !meso?.startDate) {
+    win.close();
+    alert('Selecciona un mesociclo válido antes de imprimir.');
+    return;
+  }
+
+  const weeks   = getMesoWeeks(meso);
+  const logoSrc = icons.logo || './rm.png';
+
+  const loadingEl = document.createElement('div');
+  loadingEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;font-family:Segoe UI,sans-serif;';
+  loadingEl.textContent = `Cargando mesociclo ${mesoKey.replace('M', '')}...`;
+  document.body.appendChild(loadingEl);
+
+  try {
+    const sheetsData = [];
+    for (let i = 0; i < weeks.length; i++) {
+      const weekMonday = weeks[i];
+      const weekId      = getWeekKey(weekMonday);
+      const weekLabel   = formatWeekRange(weekMonday);
+      const plans       = await loadTeamPlans(season.seasonKey, 'F7', weekId, getWeekDays(weekMonday));
+      const weekObs     = await getWeekNotes(season.seasonKey, 'F7', weekId).catch(() => '');
+      sheetsData.push({ teamFull: 'Fútbol 7', plans, photoURL: null, weekLabel, microN: i + 1, monday: weekMonday, weekObs });
+    }
+
+    const coverHTML  = buildMesoCover({ mesoKey, weeks, season, logoSrc });
+    const sheetsHTML = sheetsData.map(s => buildSheetHTML({ ...s, season, icons, logoSrc })).join('');
+
+    const html = buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, `Mesociclo ${mesoKey.replace('M', '')}`);
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 600);
+  } catch (err) {
+    win.close();
+    alert('Error: ' + err.message);
+  } finally {
+    document.body.removeChild(loadingEl);
+  }
+}
+
+function buildMesoCover({ mesoKey, weeks, season, logoSrc }) {
+  const rangeEnd = addWeeks(weeks[weeks.length - 1], 1);
+  rangeEnd.setDate(rangeEnd.getDate() - 1);
+  return `
+    <div class="cover">
+      <div class="cover-logo"><img src="${logoSrc}" alt="RM" /></div>
+      <div class="cover-title">Fútbol 7</div>
+      <div class="cover-sub">Mesociclo ${mesoKey.replace('M', '')} — ${weeks.length} microciclos</div>
+      <div class="cover-week">📅 ${safeText(formatDate(weeks[0]))} - ${safeText(formatDate(rangeEnd))}</div>
+      <div class="cover-season">${safeText(season.name || season.seasonKey)}</div>
+    </div>
+    <div class="page-break"></div>
   `;
 }
