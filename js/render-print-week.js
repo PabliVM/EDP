@@ -262,7 +262,10 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
     .meso-print-page { position: absolute; top: 0; left: 0; transform-origin: top left; }
     .meso-print-header { margin-bottom: 6px; }
     .meso-print-grid { display: flex; flex-direction: column; gap: 4px; }
-    .meso-print-row { display: grid; grid-template-columns: 70px repeat(7, 1fr); gap: 4px; align-items: stretch; }
+    .meso-print-row { display: grid; grid-template-columns: 70px 1fr; gap: 4px; align-items: stretch; }
+    .meso-print-content { display: flex; flex-direction: column; gap: 4px; justify-content: center; border: 1px solid #d1d9e6; border-radius: 6px; padding: 4px; }
+    .meso-print-blocks { display: flex; flex-direction: row; gap: 4px; }
+    .meso-print-blocks .print-block { flex: 1; min-width: 0; }
     .meso-print-label { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 8px; font-weight: 800; color: #333; background: #f0f4fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1px solid #d1d9e6; border-radius: 6px; padding: 3px; line-height: 1.3; }
     .meso-print-label span { font-size: 7px; font-weight: 600; color: #666; }
   </style>
@@ -484,17 +487,23 @@ function buildMesoSinglePage({ mesoKey, weeks, weeksPlans, season, icons, logoSr
   rangeEnd.setDate(rangeEnd.getDate() - 1);
 
   const rowsHTML = weeks.map((monday, i) => {
-    const days   = getWeekDays(monday);
     const rEnd   = addWeeks(monday, 1);
     rEnd.setDate(rEnd.getDate() - 1);
     const byDate = weeksPlans[i] || {};
-    const daysHTML = days.map(date =>
-      buildDayHTML(date, byDate[toDateKey(date)] || null, icons)
-    ).join('');
+    const plan   = byDate[toDateKey(monday)] || null;
+    const blocks = plan?.blocks || [];
+
+    const blocksHTML = blocks.length
+      ? `<div class="meso-print-blocks">${blocks.map(b => buildBlockHTML(b, icons)).join('')}</div>`
+      : `<div class="print-empty">Sin planificación</div>`;
+    const obsHTML = plan?.notes
+      ? `<div class="print-obs"><div class="print-obs-text">${safeText(plan.notes)}</div></div>`
+      : '';
+
     return `
       <div class="meso-print-row">
         <div class="meso-print-label">MC${i + 1}<br><span>${safeText(formatDate(monday))}–${safeText(formatDate(rEnd))}</span></div>
-        ${daysHTML}
+        <div class="meso-print-content">${blocksHTML}${obsHTML}</div>
       </div>
     `;
   }).join('');
