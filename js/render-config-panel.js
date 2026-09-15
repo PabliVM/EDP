@@ -131,7 +131,7 @@ function renderTabTemporadas() {
     <hr class="divider" />
 
     <div class="config-section-title mt-12">Inicio de microciclo por equipo</div>
-    <p class="text-muted text-xs mb-12">Fecha de inicio y número inicial del microciclo 1.</p>
+    <p class="text-muted text-xs mb-12">Inicio de pretemporada y de competición. Cada fase numera desde el microciclo 1.</p>
     <div id="cp-micro-list"></div>
     <button class="btn btn-primary btn-sm w-full mt-12" id="cp-btn-save-micro">Guardar microciclos</button>
   `;
@@ -227,15 +227,20 @@ function renderMicroList() {
   if (!list) return;
   const micros = porterosState.microciclos || {};
 
-  list.innerHTML = PORTEROS_TEAMS.map(team => `
-    <div style="display:grid;grid-template-columns:48px 1fr 64px;
+  list.innerHTML = `
+    <div style="display:grid;grid-template-columns:48px 1fr 1fr;gap:8px;margin-bottom:4px;">
+      <span></span>
+      <span class="text-xs text-muted fw-700">Pretemporada</span>
+      <span class="text-xs text-muted fw-700">Competición</span>
+    </div>
+  ` + PORTEROS_TEAMS.map(team => `
+    <div style="display:grid;grid-template-columns:48px 1fr 1fr;
       align-items:center;gap:8px;margin-bottom:6px;">
       <span class="fw-700" style="font-size:12px;">${safeText(team.label)}</span>
-      <input type="date" class="input" id="micro-date-${team.key}"
-        value="${micros[team.key]?.startDate || ''}" />
-      <input type="number" class="input" id="micro-num-${team.key}"
-        value="${micros[team.key]?.startNumber ?? 1}"
-        min="1" max="99" title="Nº inicial" style="text-align:center;" />
+      <input type="date" class="input" id="micro-pre-${team.key}"
+        value="${micros[team.key]?.preseasonStart || ''}" />
+      <input type="date" class="input" id="micro-comp-${team.key}"
+        value="${micros[team.key]?.competitionStart || ''}" />
     </div>
   `).join('');
 }
@@ -243,9 +248,9 @@ function renderMicroList() {
 async function saveMicrociclos() {
   const micros = {};
   PORTEROS_TEAMS.forEach(team => {
-    const date = document.getElementById(`micro-date-${team.key}`)?.value || '';
-    const num  = parseInt(document.getElementById(`micro-num-${team.key}`)?.value) || 1;
-    micros[team.key] = { startDate: date, startNumber: num };
+    const pre  = document.getElementById(`micro-pre-${team.key}`)?.value  || '';
+    const comp = document.getElementById(`micro-comp-${team.key}`)?.value || '';
+    micros[team.key] = { preseasonStart: pre, competitionStart: comp };
   });
 
   const btn = document.getElementById('cp-btn-save-micro');
