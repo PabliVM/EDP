@@ -632,6 +632,6 @@ body.dark #rm-main {
 
 /* ── Notas más grandes dentro del mesociclo F7 ── */
 .meso-row .day-obs {
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.6;
 }
