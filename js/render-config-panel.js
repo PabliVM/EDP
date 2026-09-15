@@ -50,11 +50,14 @@ function renderPanelContent(panel) {
         data-ctab="temporadas">Temporadas</button>
       <button class="config-tab-btn ${_activeTab === 'conceptos' ? 'active' : ''}"
         data-ctab="conceptos">Conceptos</button>
+      <button class="config-tab-btn ${_activeTab === 'mesociclos' ? 'active' : ''}"
+        data-ctab="mesociclos">Mesociclos F7</button>
     </div>
 
     <div class="config-panel-body">
       <div id="cp-tab-temporadas" ${_activeTab !== 'temporadas' ? 'style="display:none"' : ''}></div>
       <div id="cp-tab-conceptos"  ${_activeTab !== 'conceptos'  ? 'style="display:none"' : ''}></div>
+      <div id="cp-tab-mesociclos" ${_activeTab !== 'mesociclos' ? 'style="display:none"' : ''}></div>
     </div>
   `;
 
@@ -68,11 +71,13 @@ function renderPanelContent(panel) {
       );
       document.getElementById('cp-tab-temporadas').style.display = _activeTab === 'temporadas' ? '' : 'none';
       document.getElementById('cp-tab-conceptos').style.display  = _activeTab === 'conceptos'  ? '' : 'none';
+      document.getElementById('cp-tab-mesociclos').style.display = _activeTab === 'mesociclos' ? '' : 'none';
     });
   });
 
   renderTabTemporadas();
   renderTabConceptos();
+  renderTabMesociclos();
 
   if (_unsubSeas) _unsubSeas();
   _unsubSeas = listenSeasons(
@@ -326,3 +331,60 @@ async function saveConceptos() {
   }
 }
 
+// ── PESTAÑA MESOCICLOS F7 ─────────────────────────
+
+function renderTabMesociclos() {
+  const tab = document.getElementById('cp-tab-mesociclos');
+  if (!tab) return;
+
+  tab.innerHTML = `
+    <div class="config-section-title mt-12">Mesociclos F7</div>
+    <p class="text-muted text-xs mb-12">Define inicio y nº de semanas de cada mesociclo (1 a 9).</p>
+    <div id="cp-meso-list"></div>
+    <button class="btn btn-primary btn-sm w-full mt-12" id="cp-btn-save-meso">Guardar mesociclos</button>
+  `;
+
+  document.getElementById('cp-btn-save-meso').addEventListener('click', saveMesociclos);
+  renderMesoList();
+}
+
+function renderMesoList() {
+  const list = document.getElementById('cp-meso-list');
+  if (!list) return;
+  const meso = porterosState.mesociclosF7 || {};
+
+  list.innerHTML = Array.from({ length: 9 }, (_, i) => {
+    const key = `M${i + 1}`;
+    const m   = meso[key] || {};
+    return `
+      <div style="display:grid;grid-template-columns:32px 1fr 60px;align-items:center;gap:8px;margin-bottom:6px;">
+        <span class="fw-700" style="font-size:12px;">${key}</span>
+        <input type="date" class="input" id="meso-date-${key}" value="${m.startDate || ''}" />
+        <input type="number" class="input" id="meso-weeks-${key}" value="${m.numWeeks ?? 4}"
+          min="1" max="8" title="Nº semanas" style="text-align:center;" />
+      </div>
+    `;
+  }).join('');
+}
+
+async function saveMesociclos() {
+  const meso = {};
+  for (let i = 1; i <= 9; i++) {
+    const key   = `M${i}`;
+    const date  = document.getElementById(`meso-date-${key}`)?.value || '';
+    const weeks = parseInt(document.getElementById(`meso-weeks-${key}`)?.value) || 4;
+    if (date) meso[key] = { startDate: date, numWeeks: weeks };
+  }
+
+  const btn = document.getElementById('cp-btn-save-meso');
+  btn.disabled = true;
+  try {
+    await saveConfigSection('mesociclos_f7', meso);
+    setPorterosState({ mesociclosF7: meso });
+    showSuccess('Mesociclos guardados.');
+  } catch (err) {
+    showError('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
