@@ -103,4 +103,41 @@ export function getMicroNumberForTeam(monday, teamKey, microciclos) {
   return startNumber + diff;
 }
 
+// ── MESOCICLOS (F7) ───────────────────────────────
 
+// Devuelve el array de lunes (uno por microciclo) que forman un mesociclo
+export function getMesoWeeks(meso) {
+  if (!meso?.startDate) return [];
+  const start    = getMondayOfWeek(new Date(meso.startDate));
+  const numWeeks = meso.numWeeks || 4;
+  return Array.from({ length: numWeeks }, (_, i) => addWeeks(start, i));
+}
+
+// Busca en qué mesociclo (M1..M9) cae una fecha dada (por defecto hoy)
+export function getCurrentMesoKey(mesociclos, date = new Date()) {
+  const monday = getMondayOfWeek(date);
+  for (let i = 1; i <= 9; i++) {
+    const key   = `M${i}`;
+    const weeks = getMesoWeeks(mesociclos?.[key]);
+    if (weeks.length === 0) continue;
+    const start = weeks[0];
+    const end   = addWeeks(start, weeks.length);
+    if (monday >= start && monday < end) return key;
+  }
+  // Si ninguno encaja con la fecha, cae en el primero definido
+  for (let i = 1; i <= 9; i++) {
+    const key = `M${i}`;
+    if (mesociclos?.[key]?.startDate) return key;
+  }
+  return null;
+}
+
+// Siguiente/anterior mesociclo definido (dir = 1 o -1)
+export function getAdjacentMesoKey(mesociclos, currentKey, dir) {
+  const idx = parseInt((currentKey || 'M1').replace('M', '')) || 1;
+  for (let i = idx + dir; i >= 1 && i <= 9; i += dir) {
+    const key = `M${i}`;
+    if (mesociclos?.[key]?.startDate) return key;
+  }
+  return currentKey;
+}
