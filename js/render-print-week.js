@@ -4,7 +4,7 @@
 
 import { porterosState }                       from './porteros-state.js';
 import { BLOCK_TYPES, PORTEROS_TEAMS, PORTERO_TEAM } from './porteros-constants.js';
-import { getWeekDays, formatWeekRange, getMicroNumber, getMicroInfoForTeam, toDateKey, getDayName, addWeeks, getMesoWeeks, formatDate } from './dates.js';
+import { getWeekDays, formatWeekRange, getMicroNumber, getMicroInfoForTeam, toDateKey, getDayName, addWeeks, getMesoWeeks, getCurrentMesoKey, formatDate } from './dates.js';
 import { safeText }                            from './utils.js';
 import { listenWeekPlans, getWeekNotes }       from './firebase-service.js';
 
@@ -119,6 +119,7 @@ export async function printAllWeeks() {
     const sheetsData = await Promise.all(PORTEROS_TEAMS.map(async (team, i) => {
       const info = getMicroInfoForTeam(monday, team.key, porterosState.microciclos);
       return {
+        teamKey:  team.key,
         teamFull: team.full,
         plans:    teamsData[i],
         photoURL: null,
@@ -147,9 +148,29 @@ export async function printAllWeeks() {
     }
 
     const coverHTML  = buildCover({ weekLabel, season, logoSrc });
-    const sheetsHTML = sheetsData.map(s =>
-      buildSheetHTML({ ...s, season, icons, logoSrc })
-    ).join('');
+
+    // F7: si la semana que se imprime cae dentro de un mesociclo configurado,
+    // se sustituye su hoja normal por el mesociclo completo (1 sola página).
+    const f7Meso     = getCurrentMesoKey(porterosState.mesociclosF7, monday);
+    const f7MesoData = f7Meso ? porterosState.mesociclosF7?.[f7Meso] : null;
+    let f7MesoWeeks      = null;
+    let f7MesoWeeksPlans = null;
+    if (f7MesoData?.startDate) {
+      f7MesoWeeks = getMesoWeeks(f7MesoData);
+      f7MesoWeeksPlans = await Promise.all(
+        f7MesoWeeks.map(wm => loadTeamPlans(season.seasonKey, 'F7', getWeekKey(wm), getWeekDays(wm)))
+      );
+    }
+
+    const sheetsHTML = sheetsData.map(s => {
+      if (s.teamKey === 'F7' && f7MesoWeeksPlans) {
+        return buildMesoSinglePage({
+          mesoKey: f7Meso, weeks: f7MesoWeeks, weeksPlans: f7MesoWeeksPlans,
+          season, icons, logoSrc,
+        }) + '<div class="page-break"></div>';
+      }
+      return buildSheetHTML({ ...s, season, icons, logoSrc });
+    }).join('');
 
     const html = buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, weekLabel);
     win.document.write(html);
