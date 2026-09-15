@@ -57,8 +57,8 @@
   border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
-  min-height: clamp(300px, 62vh, 820px);
-  overflow: hidden;
+  min-height: 300px;
+  overflow: visible;
   position: relative;
 }
 .day-col.today { border-color: var(--blue-500); }
@@ -553,4 +553,56 @@ body.dark #rm-main {
   margin-top: 4px;
   font-style: italic;
   line-height: 1.4;
+}
+
+/* ── MESOCICLO F7 ── */
+.meso-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 clamp(8px, 6vw, 60px) 20px;
+}
+.meso-row {
+  display: grid;
+  grid-template-columns: 110px repeat(7, 1fr);
+  gap: clamp(4px, 0.8vw, 10px);
+  align-items: stretch;
+}
+.meso-row .day-col {
+  min-height: 140px;
+}
+.meso-daylabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 4px 0;
+}
+.meso-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 6px 4px;
+  line-height: 1.4;
+}
+.meso-label span {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+@media (max-width: 1100px) {
+  .meso-row {
+    grid-template-columns: 90px repeat(7, minmax(140px, 1fr));
+    overflow-x: auto;
+  }
 }
