@@ -103,6 +103,30 @@ export function getMicroNumberForTeam(monday, teamKey, microciclos) {
   return startNumber + diff;
 }
 
+// Microciclo por equipo distinguiendo fase pretemporada / competición.
+// Cada fase numera desde 1. La fase activa la decide competitionStart:
+// si la semana es anterior a competitionStart → pretemporada (desde preseasonStart).
+// si es igual o posterior → competición (desde competitionStart).
+export function getMicroInfoForTeam(monday, teamKey, microciclos) {
+  const cfg = microciclos?.[teamKey];
+  if (!cfg || (!cfg.preseasonStart && !cfg.competitionStart)) {
+    return { number: getMicroNumber(monday, null), phase: null };
+  }
+
+  const compStart = cfg.competitionStart ? getMondayOfWeek(new Date(cfg.competitionStart)) : null;
+  const preStart  = cfg.preseasonStart   ? getMondayOfWeek(new Date(cfg.preseasonStart))   : null;
+
+  if (compStart && monday >= compStart) {
+    const diff = Math.round((monday - compStart) / (7 * 24 * 3600 * 1000));
+    return { number: diff + 1, phase: 'competicion' };
+  }
+  if (preStart) {
+    const diff = Math.round((monday - preStart) / (7 * 24 * 3600 * 1000));
+    return { number: diff + 1, phase: 'pretemporada' };
+  }
+  return { number: getMicroNumber(monday, null), phase: 'pretemporada' };
+}
+
 // ── MESOCICLOS (F7) ───────────────────────────────
 
 // Devuelve el array de lunes (uno por microciclo) que forman un mesociclo
