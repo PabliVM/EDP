@@ -7,7 +7,8 @@ import { PORTERO_TEAM }                from './porteros-constants.js';
 import {
   getMondayOfWeek, getWeekDays, addWeeks,
   formatWeekRange, getWeekKey, getMicroNumber,
-  getMicroNumberForTeam, toDateKey, isSameDay,
+  getMicroNumberForTeam, toDateKey, isSameDay, formatDate,
+  getMesoWeeks, getCurrentMesoKey, getAdjacentMesoKey,
 } from './dates.js';
 import {
   listenWeekPlans, upsertWeek,
@@ -19,8 +20,9 @@ import {
 import { renderDayColumn } from './render-day-column.js';
 import { showError }       from './utils.js';
 
-let _unsubPlans    = null;
-let _microOverride = null;
+let _unsubPlans     = null;
+let _microOverride  = null;
+let _unsubMesoPlans = [];
 window.__edpWeekPlans       = {};
 window.__edpPorteroName     = '';
 window.__edpPorteroPhotoURL = null;
@@ -29,6 +31,8 @@ export function renderWeekPlanning() {
   const panel = document.getElementById('view-semana');
   if (!panel) return;
   panel.innerHTML = '';
+  _unsubMesoPlans.forEach(u => u());
+  _unsubMesoPlans = [];
 
   if (!porterosState.activeTeam) {
     panel.innerHTML = `<div class="state-empty"><div class="state-empty-icon">👆</div><p>Selecciona un equipo.</p></div>`;
@@ -36,6 +40,11 @@ export function renderWeekPlanning() {
   }
   if (!porterosState.activeSeason) {
     panel.innerHTML = `<div class="state-empty"><div class="state-empty-icon">📅</div><p>No hay temporada activa.<br>Crea una en <strong>Configuración</strong>.</p></div>`;
+    return;
+  }
+
+  if (porterosState.activeTeam === 'F7') {
+    _renderMesoView(panel, porterosState.activeSeason);
     return;
   }
 
@@ -311,4 +320,105 @@ function navigate(n) {
 function goToday() {
   setPorterosState({ currentMonday: getMondayOfWeek(new Date()) });
   renderWeekPlanning();
+}
+
+// ================================================
+// VISTA MESOCICLO (F7)
+// ================================================
+
+function _renderMesoView(panel, season) {
+  if (!season) {
+    panel.innerHTML = `<div class="state-empty"><div class="state-empty-icon">📅</div><p>No hay temporada activa.<br>Crea una en <strong>Configuración</strong>.</p></div>`;
+    return;
+  }
+
+  const mesociclos = porterosState.mesociclosF7 || {};
+
+  if (!porterosState.currentMeso || !mesociclos[porterosState.currentMeso]?.startDate) {
+    setPorterosState({ currentMeso: getCurrentMesoKey(mesociclos) });
+  }
+  const mesoKey = porterosState.currentMeso;
+  const meso    = mesoKey ? mesociclos[mesoKey] : null;
+
+  if (!meso?.startDate) {
+    panel.innerHTML = `<div class="state-empty"><div class="state-empty-icon">📅</div><p>Define los mesociclos de F7 en <strong>Configuración</strong>.</p></div>`;
+    return;
+  }
+
+  const weeks    = getMesoWeeks(meso);
+  const rangeEnd = addWeeks(weeks[weeks.length - 1], 1);
+  rangeEnd.setDate(rangeEnd.getDate() - 1);
+
+  const nav = document.createElement('div');
+  nav.className = 'week-nav no-print';
+  nav.innerHTML = `
+    <button class="btn btn-ghost btn-icon" id="btn-prev-meso">◀</button>
+    <div class="week-nav-info">
+      <div class="week-nav-label">Mesociclo ${mesoKey.replace('M', '')}</div>
+      <div class="week-nav-sub">${formatDate(weeks[0])} — ${formatDate(rangeEnd)} · ${season.name || season.seasonKey}</div>
+    </div>
+    <button class="btn btn-ghost btn-icon" id="btn-next-meso">▶</button>
+  `;
+  panel.appendChild(nav);
+
+  document.getElementById('btn-prev-meso').addEventListener('click', () => {
+    setPorterosState({ currentMeso: getAdjacentMesoKey(mesociclos, mesoKey, -1) });
+    renderWeekPlanning();
+  });
+  document.getElementById('btn-next-meso').addEventListener('click', () => {
+    setPorterosState({ currentMeso: getAdjacentMesoKey(mesociclos, mesoKey, 1) });
+    renderWeekPlanning();
+  });
+
+  const grid = document.createElement('div');
+  grid.className = 'meso-grid';
+  panel.appendChild(grid);
+
+  renderMesoGridRows(grid, weeks, season);
+}
+
+function renderMesoGridRows(grid, weeks, season) {
+  grid.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'meso-row meso-header';
+  header.innerHTML = `<div class="meso-label"></div>` +
+    ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM']
+      .map(d => `<div class="meso-daylabel">${d}</div>`).join('');
+  grid.appendChild(header);
+
+  const today = new Date();
+
+  weeks.forEach((monday, i) => {
+    const weekId = getWeekKey(monday);
+    const days   = getWeekDays(monday);
+    const rEnd   = addWeeks(monday, 1);
+    rEnd.setDate(rEnd.getDate() - 1);
+
+    const row = document.createElement('div');
+    row.className = 'meso-row';
+    row.innerHTML = `<div class="meso-label">Microciclo ${i + 1}<br><span>${formatDate(monday)}–${formatDate(rEnd)}</span></div>`;
+    grid.appendChild(row);
+
+    rerenderMesoRow(row, days, {}, today);
+
+    const unsub = listenWeekPlans(season.seasonKey, 'F7', weekId,
+      plans => {
+        const byDate = {};
+        plans.forEach(p => { byDate[p.date] = p; });
+        rerenderMesoRow(row, days, byDate, today);
+      },
+      err => showError('Error cargando microciclo ' + (i + 1) + ': ' + err.message),
+    );
+    _unsubMesoPlans.push(unsub);
+  });
+}
+
+function rerenderMesoRow(row, days, byDate, today) {
+  row.querySelectorAll('.day-col').forEach(el => el.remove());
+  days.forEach(date => {
+    const col = renderDayColumn(date, byDate[toDateKey(date)] || null, isSameDay(date, today));
+    col.dataset.dateKey = toDateKey(date);
+    row.appendChild(col);
+  });
 }
