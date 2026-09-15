@@ -120,7 +120,7 @@ function renderSpecialDay(body, label) {
   body.appendChild(wrap);
 }
 
-function renderBlock(block, icons, date, plan) {
+export function renderBlock(block, icons, date, plan) {
   const def     = BLOCK_TYPES.find(b => b.key === block.blockType);
   const iconSrc = icons[def?.iconKey] || '';
   const label   = def?.label || block.blockType;
