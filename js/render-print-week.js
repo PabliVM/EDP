@@ -279,7 +279,7 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
     .print-obs-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #666; margin-bottom: 3px; }
     .print-obs-text  { font-size: 9px; color: #333; line-height: 1.5; }
 
-    .meso-print-outer { width: 277mm; height: 190mm; overflow: hidden; position: relative; page-break-inside: avoid; break-inside: avoid; }
+    .meso-print-outer { width: 277mm; overflow: hidden; position: relative; page-break-inside: avoid; break-inside: avoid; }
     .meso-print-page { position: absolute; top: 0; left: 0; transform-origin: top left; }
     .meso-print-header { margin-bottom: 6px; }
     .meso-print-grid { display: flex; flex-direction: column; gap: 4px; }
@@ -530,35 +530,41 @@ function buildMesoSinglePage({ mesoKey, weeks, weeksPlans, season, icons, logoSr
   }).join('');
 
   return `
+    <div class="print-header meso-print-header" id="meso-print-header">
+      <div class="print-header-logo"><img src="${logoSrc}" alt="RM" /></div>
+      <div class="print-header-text">
+        <div class="print-header-title">Fútbol 7 — Mesociclo ${mesoKey.replace('M', '')}</div>
+        <div class="print-header-sub">Planificación completa del mesociclo</div>
+        <div class="print-header-week">📅 ${safeText(formatDate(weeks[0]))} - ${safeText(formatDate(rangeEnd))} · ${safeText(season.name || season.seasonKey)}</div>
+      </div>
+    </div>
     <div class="meso-print-outer" id="meso-print-outer">
       <div class="meso-print-page" id="meso-print-page">
-        <div class="print-header meso-print-header">
-          <div class="print-header-logo"><img src="${logoSrc}" alt="RM" /></div>
-          <div class="print-header-text">
-            <div class="print-header-title">Fútbol 7 — Mesociclo ${mesoKey.replace('M', '')}</div>
-            <div class="print-header-sub">Planificación completa del mesociclo</div>
-            <div class="print-header-week">📅 ${safeText(formatDate(weeks[0]))} - ${safeText(formatDate(rangeEnd))} · ${safeText(season.name || season.seasonKey)}</div>
-          </div>
-        </div>
         <div class="meso-print-grid">${rowsHTML}</div>
       </div>
     </div>
     <script>
       (function () {
         function scaleMesoPage() {
-          var outer = document.getElementById('meso-print-outer');
-          var page  = document.getElementById('meso-print-page');
+          var outer  = document.getElementById('meso-print-outer');
+          var page   = document.getElementById('meso-print-page');
+          var header = document.getElementById('meso-print-header');
           if (!outer || !page) return;
           var PX_PER_MM = 96 / 25.4;
-          var pageWidthPx  = 277 * PX_PER_MM;
-          var pageHeightPx = 190 * PX_PER_MM;
+          var pageWidthPx     = 277 * PX_PER_MM;
+          var totalHeightPx   = 190 * PX_PER_MM;
+          var headerHeightPx  = header ? header.getBoundingClientRect().height : 0;
+          var availableHeightPx = Math.max(60, totalHeightPx - headerHeightPx - 8);
+
+          outer.style.width  = pageWidthPx + 'px';
+          outer.style.height = availableHeightPx + 'px';
 
           page.style.transform = 'none';
           page.style.width = pageWidthPx + 'px';
           var natural = page.scrollHeight || 1;
-          var scale = pageHeightPx / natural;
+          var scale = availableHeightPx / natural;
           if (!isFinite(scale) || scale <= 0) scale = 1;
-          scale = Math.max(0.3, Math.min(scale, 2.2));
+          scale = Math.max(0.3, Math.min(scale, 1.2));
 
           page.style.width = (pageWidthPx / scale) + 'px';
           page.style.transform = 'scale(' + scale + ')';
