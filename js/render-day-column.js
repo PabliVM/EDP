@@ -96,7 +96,10 @@ function renderDayBody(body, date, plan, dayType, icons) {
     if (blocks.length === 0) {
       body.innerHTML = `<div class="day-empty">Sin bloques</div>`;
     } else {
-      blocks.forEach(block => body.appendChild(renderBlock(block, icons, date, plan)));
+      const wrap = document.createElement('div');
+      wrap.className = 'training-blocks-wrap';
+      blocks.forEach(block => wrap.appendChild(renderBlock(block, icons, date, plan)));
+      body.appendChild(wrap);
     }
     appendAddBtn(body, date, plan, '＋ Añadir bloque');
   }
