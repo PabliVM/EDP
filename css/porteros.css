@@ -606,3 +606,26 @@ body.dark #rm-main {
     overflow-x: auto;
   }
 }
+
+/* ── Bloques de entrenamiento en horizontal dentro del mesociclo F7 ── */
+.meso-row .training-blocks-wrap {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  flex: 1;
+}
+.meso-row .training-blocks-wrap .training-block {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.meso-row .training-block-content {
+  overflow-wrap: break-word;
+}
+
+/* ── Notas más grandes dentro del mesociclo F7 ── */
+.meso-row .day-obs {
+  font-size: 13px;
+  line-height: 1.5;
+}
