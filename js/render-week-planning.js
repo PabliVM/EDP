@@ -1,7 +1,7 @@
 // ================================================
 // RENDER-WEEK-PLANNING.JS
 // ================================================
-import { printWeek, printAllWeeks }    from './render-print-week.js';
+import { printWeek, printAllWeeks, printMesociclo } from './render-print-week.js';
 import { porterosState, setPorterosState } from './porteros-state.js';
 import { PORTERO_TEAM }                from './porteros-constants.js';
 import {
@@ -358,6 +358,7 @@ function _renderMesoView(panel, season) {
       <div class="week-nav-sub">${formatDate(weeks[0])} — ${formatDate(rangeEnd)} · ${season.name || season.seasonKey}</div>
     </div>
     <button class="btn btn-ghost btn-icon" id="btn-next-meso">▶</button>
+    <button class="btn btn-ghost no-print" id="btn-print-meso" title="Imprimir mesociclo completo">🖨️</button>
   `;
   panel.appendChild(nav);
 
@@ -369,6 +370,7 @@ function _renderMesoView(panel, season) {
     setPorterosState({ currentMeso: getAdjacentMesoKey(mesociclos, mesoKey, 1) });
     renderWeekPlanning();
   });
+  document.getElementById('btn-print-meso').addEventListener('click', () => printMesociclo());
 
   const grid = document.createElement('div');
   grid.className = 'meso-grid';
