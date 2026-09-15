@@ -556,8 +556,9 @@ function buildMesoSinglePage({ mesoKey, weeks, weeksPlans, season, icons, logoSr
           page.style.transform = 'none';
           page.style.width = pageWidthPx + 'px';
           var natural = page.scrollHeight || 1;
-          var scale = Math.min(1, pageHeightPx / natural);
+          var scale = pageHeightPx / natural;
           if (!isFinite(scale) || scale <= 0) scale = 1;
+          scale = Math.max(0.3, Math.min(scale, 2.2));
 
           page.style.width = (pageWidthPx / scale) + 'px';
           page.style.transform = 'scale(' + scale + ')';
