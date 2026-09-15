@@ -537,6 +537,7 @@ function buildMesoSinglePage({ mesoKey, weeks, weeksPlans, season, icons, logoSr
         <div class="print-header-sub">Planificación completa del mesociclo</div>
         <div class="print-header-week">📅 ${safeText(formatDate(weeks[0]))} - ${safeText(formatDate(rangeEnd))} · ${safeText(season.name || season.seasonKey)}</div>
       </div>
+      <div class="print-header-team">Fútbol 7</div>
     </div>
     <div class="meso-print-outer" id="meso-print-outer">
       <div class="meso-print-page" id="meso-print-page">
