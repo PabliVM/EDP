@@ -17,7 +17,8 @@ import {
   uploadPorteroPhoto, getPorteroPhoto,
   saveWeekNotes, getWeekNotes,
 } from './firebase-service.js';
-import { renderDayColumn } from './render-day-column.js';
+import { renderDayColumn, renderBlock } from './render-day-column.js';
+import { openDayEditor } from './render-day-editor.js';
 import { showError }       from './utils.js';
 
 let _unsubPlans     = null;
@@ -384,12 +385,10 @@ function _renderMesoView(panel, season) {
 
 function renderMesoGridRows(grid, weeks, season) {
   grid.innerHTML = '';
-
-  const today = new Date();
+  const icons = porterosState.icons || {};
 
   weeks.forEach((monday, i) => {
     const weekId = getWeekKey(monday);
-    const days   = getWeekDays(monday);
     const rEnd   = addWeeks(monday, 1);
     rEnd.setDate(rEnd.getDate() - 1);
 
@@ -398,13 +397,12 @@ function renderMesoGridRows(grid, weeks, season) {
     row.innerHTML = `<div class="meso-label">Microciclo ${i + 1}<br><span>${formatDate(monday)}–${formatDate(rEnd)}</span></div>`;
     grid.appendChild(row);
 
-    rerenderMesoRow(row, days, {}, today);
+    rerenderMesoRow(row, monday, null, icons);
 
     const unsub = listenWeekPlans(season.seasonKey, 'F7', weekId,
       plans => {
-        const byDate = {};
-        plans.forEach(p => { byDate[p.date] = p; });
-        rerenderMesoRow(row, days, byDate, today);
+        const anchorPlan = plans.find(p => p.date === toDateKey(monday)) || null;
+        rerenderMesoRow(row, monday, anchorPlan, icons);
       },
       err => showError('Error cargando microciclo ' + (i + 1) + ': ' + err.message),
     );
@@ -412,11 +410,58 @@ function renderMesoGridRows(grid, weeks, season) {
   });
 }
 
-function rerenderMesoRow(row, days, byDate, today) {
-  row.querySelectorAll('.day-col').forEach(el => el.remove());
-  days.forEach(date => {
-    const col = renderDayColumn(date, byDate[toDateKey(date)] || null, isSameDay(date, today));
-    col.dataset.dateKey = toDateKey(date);
-    row.appendChild(col);
-  });
+function rerenderMesoRow(row, monday, plan, icons) {
+  const old = row.querySelector('.meso-content');
+  if (old) old.remove();
+
+  const content = document.createElement('div');
+  content.className = 'meso-content';
+
+  const blocks = plan?.blocks || [];
+  if (blocks.length === 0) {
+    content.innerHTML = `<div class="day-empty">Sin bloques</div>`;
+  } else {
+    const blocksRow = document.createElement('div');
+    blocksRow.className = 'training-blocks-wrap';
+    blocks.forEach(block => blocksRow.appendChild(renderBlock(block, icons, monday, plan)));
+    content.appendChild(blocksRow);
+  }
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-block-btn';
+  addBtn.innerHTML = '＋ Añadir bloque';
+  addBtn.addEventListener('click', () => openMesoEditor(monday, plan));
+  content.appendChild(addBtn);
+
+  if (plan?.notes) {
+    const obs = document.createElement('div');
+    obs.className = 'day-obs';
+    obs.textContent = plan.notes;
+    content.appendChild(obs);
+  }
+
+  row.appendChild(content);
+}
+
+// Abre el mismo editor de siempre, pero sin tipo de día: se fuerza a
+// "entrenamiento" para que solo se vean los bloques, y se ancla al lunes
+// del microciclo (mismo saveDayPlan/day_plans de siempre, sin colección nueva).
+function openMesoEditor(monday, plan) {
+  const seed = plan
+    ? { ...plan, dayType: 'entrenamiento' }
+    : {
+        seasonKey: porterosState.activeSeason?.seasonKey || '',
+        teamKey:   'F7',
+        weekId:    getWeekKey(monday),
+        date:      toDateKey(monday),
+        dayOfWeek: monday.getDay(),
+        dayNumber: monday.getDate(),
+        dayType:   'entrenamiento',
+        blocks:    [],
+        matchInfo: {},
+        tournamentInfo: {},
+        notes:     '',
+        status:    'borrador',
+      };
+  openDayEditor(monday, seed);
 }
