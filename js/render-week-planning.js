@@ -1,429 +1,543 @@
 // ================================================
-// RENDER-WEEK-PLANNING.JS
+// RENDER-PRINT-WEEK.JS — Impresión semanal
 // ================================================
-import { printWeek, printAllWeeks, printMesociclo } from './render-print-week.js';
-import { porterosState, setPorterosState } from './porteros-state.js';
-import { PORTERO_TEAM }                from './porteros-constants.js';
-import {
-  getMondayOfWeek, getWeekDays, addWeeks,
-  formatWeekRange, getWeekKey, getMicroNumber,
-  getMicroInfoForTeam, toDateKey, isSameDay, formatDate,
-  getMesoWeeks, getCurrentMesoKey, getAdjacentMesoKey,
-} from './dates.js';
-import {
-  listenWeekPlans, upsertWeek,
-  saveWeekMicro, getWeekMicro,
-  savePorteroName, getPorteroName,
-  uploadPorteroPhoto, getPorteroPhoto,
-  saveWeekNotes, getWeekNotes,
-} from './firebase-service.js';
-import { renderDayColumn } from './render-day-column.js';
-import { showError }       from './utils.js';
 
-let _unsubPlans     = null;
-let _microOverride  = null;
-let _unsubMesoPlans = [];
-window.__edpWeekPlans       = {};
-window.__edpPorteroName     = '';
-window.__edpPorteroPhotoURL = null;
+import { porterosState }                       from './porteros-state.js';
+import { BLOCK_TYPES, PORTEROS_TEAMS, PORTERO_TEAM } from './porteros-constants.js';
+import { getWeekDays, formatWeekRange, getMicroNumber, getMicroInfoForTeam, toDateKey, getDayName, addWeeks, getMesoWeeks, formatDate } from './dates.js';
+import { safeText }                            from './utils.js';
+import { listenWeekPlans, getWeekNotes }       from './firebase-service.js';
 
-export function renderWeekPlanning() {
-  const panel = document.getElementById('view-semana');
-  if (!panel) return;
-  panel.innerHTML = '';
-  _unsubMesoPlans.forEach(u => u());
-  _unsubMesoPlans = [];
-
-  if (!porterosState.activeTeam) {
-    panel.innerHTML = `<div class="state-empty"><div class="state-empty-icon">👆</div><p>Selecciona un equipo.</p></div>`;
-    return;
-  }
-  if (!porterosState.activeSeason) {
-    panel.innerHTML = `<div class="state-empty"><div class="state-empty-icon">📅</div><p>No hay temporada activa.<br>Crea una en <strong>Configuración</strong>.</p></div>`;
+export async function printWeek(numWeeks = 1) {
+  // Abrir ventana ANTES de cualquier await
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('El navegador bloqueó la ventana emergente. Permite popups para esta página.');
     return;
   }
 
-  if (porterosState.activeTeam === 'F7') {
-    _renderMesoView(panel, porterosState.activeSeason);
+  const monday  = porterosState.currentMonday;
+  const season  = porterosState.activeSeason;
+  const team    = porterosState.activeTeam;
+  const icons   = porterosState.icons || {};
+
+  if (!monday || !season || !team) {
+    win.close();
+    alert('Selecciona equipo y temporada antes de imprimir.');
     return;
   }
 
-  const isPortero = porterosState.activeTeam === PORTERO_TEAM.key;
-  const monday    = porterosState.currentMonday;
+  const isPortero = team === PORTERO_TEAM.key;
+  const teamFull  = isPortero
+    ? (window.__edpPorteroName || 'Portero')
+    : (PORTEROS_TEAMS.find(t => t.key === team)?.full || team);
+  const photoURL  = isPortero ? (window.__edpPorteroPhotoURL || null) : null;
+  const logoSrc   = icons.logo || './rm.png';
+
+  const loadingEl = document.createElement('div');
+  loadingEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;font-family:Segoe UI,sans-serif;';
+  loadingEl.textContent = `Cargando ${numWeeks} semana(s)...`;
+  document.body.appendChild(loadingEl);
+
+  try {
+    const sheetsData = [];
+
+    for (let i = 0; i < numWeeks; i++) {
+      const weekMonday = addWeeks(monday, i);
+      const weekId     = getWeekKey(weekMonday);
+      const weekLabel  = formatWeekRange(weekMonday);
+      const microInfo  = getMicroInfoForTeam(weekMonday, team, porterosState.microciclos);
+      const microN     = microInfo.number;
+      const microPhase = microInfo.phase;
+      const plans      = i === 0 && numWeeks === 1
+        ? (window.__edpWeekPlans || {})
+        : await loadTeamPlans(season.seasonKey, team, weekId, getWeekDays(weekMonday));
+      const weekObs    = await getWeekNotes(season.seasonKey, team, weekId).catch(() => '');
+
+      sheetsData.push({ teamFull, plans, photoURL, weekLabel, microN, microPhase, monday: weekMonday, weekObs });
+    }
+
+    const coverHTML  = isPortero
+      ? buildPorteroCover({
+          teamFull,
+          weekLabelFirst: sheetsData[0]?.weekLabel || '',
+          weekLabelLast:  sheetsData[sheetsData.length - 1]?.weekLabel || '',
+          season,
+          logoSrc,
+        })
+      : '';
+    const sheetsHTML = sheetsData.map(s =>
+      buildSheetHTML({ ...s, season, icons, logoSrc })
+    ).join('');
+
+    const html = buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, sheetsData[0]?.weekLabel || '');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 600);
+  } catch (err) {
+    win.close();
+    alert('Error: ' + err.message);
+  } finally {
+    document.body.removeChild(loadingEl);
+  }
+}
+
+export async function printAllWeeks() {
+  // Abrir ventana ANTES de cualquier await
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('El navegador bloqueó la ventana emergente. Permite popups para esta página.');
+    return;
+  }
+
+  const monday  = porterosState.currentMonday;
+  const season  = porterosState.activeSeason;
+  const icons   = porterosState.icons || {};
+
+  if (!monday || !season) {
+    win.close();
+    alert('Selecciona una temporada activa antes de imprimir.');
+    return;
+  }
+
   const days      = getWeekDays(monday);
+  const weekLabel = formatWeekRange(monday);
   const weekId    = getWeekKey(monday);
-  const season    = porterosState.activeSeason;
+  const logoSrc   = icons.logo || './rm.png';
 
-  const microInfo = getMicroInfoForTeam(monday, porterosState.activeTeam, porterosState.microciclos);
-  const microBase  = microInfo.number;
+  const loadingEl = document.createElement('div');
+  loadingEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;font-family:Segoe UI,sans-serif;';
+  loadingEl.textContent = 'Cargando planificaciones...';
+  document.body.appendChild(loadingEl);
 
-  _microOverride = null;
-  getWeekMicro(season.seasonKey, porterosState.activeTeam, weekId)
-    .then(saved => {
-      _microOverride = saved;
-      _renderNav(panel, monday, days, weekId, microBase, season, isPortero, microInfo.phase);
-    })
-    .catch(() => {
-      _renderNav(panel, monday, days, weekId, microBase, season, isPortero, microInfo.phase);
-    });
+  try {
+    const teamsData = await Promise.all(
+      PORTEROS_TEAMS.map(team => loadTeamPlans(season.seasonKey, team.key, weekId, days))
+    );
 
-  upsertWeek({
-    id:          weekId,
-    seasonKey:   season.seasonKey,
-    weekNumber:  parseInt(weekId.split('-W')[1]),
-    microNumber: microBase,
-    mondayDate:  toDateKey(monday),
-    sundayDate:  toDateKey(days[6]),
-    label:       formatWeekRange(monday),
-  }).catch(err => showError('Error guardando semana: ' + err.message));
+    const sheetsData = await Promise.all(PORTEROS_TEAMS.map(async (team, i) => {
+      const info = getMicroInfoForTeam(monday, team.key, porterosState.microciclos);
+      return {
+        teamFull: team.full,
+        plans:    teamsData[i],
+        photoURL: null,
+        weekLabel,
+        microN:     info.number,
+        microPhase: info.phase,
+        monday,
+        weekObs: await getWeekNotes(season.seasonKey, team.key, weekId).catch(() => ''),
+      };
+    }));
 
-  _renderNav(panel, monday, days, weekId, microBase, season, isPortero);
-}
-
-function _renderNav(panel, monday, days, weekId, microBase, season, isPortero, microPhase) {
-  const oldNav = panel.querySelector('.week-nav');
-  if (oldNav) oldNav.remove();
-
-  const microN = _microOverride ?? microBase;
-  const phaseLabel = microPhase === 'competicion' ? ' (Comp.)' : microPhase === 'pretemporada' ? ' (Pretemp.)' : '';
-
-  const nav = document.createElement('div');
-  nav.className = 'week-nav no-print';
-  nav.innerHTML = `
-    <button class="btn btn-ghost btn-icon" id="btn-prev-week">◀</button>
-    <div class="week-nav-info">
-      <div class="week-nav-label">${formatWeekRange(monday)}</div>
-      <div class="week-nav-sub" style="display:flex;align-items:center;gap:6px;justify-content:center;">
-        <span>Microciclo${phaseLabel}</span>
-        <input type="number" id="micro-input"
-          value="${microN}" min="1" max="99"
-          style="width:48px;text-align:center;font-size:11px;font-weight:700;
-            border:1px solid var(--border-default);border-radius:4px;
-            padding:1px 4px;background:var(--bg-raised);color:var(--text-primary);" />
-        <button id="btn-save-micro" class="btn btn-ghost btn-sm"
-          style="font-size:10px;padding:2px 6px;">✓</button>
-        <span>·</span>
-        <span>${season.name || season.seasonKey}</span>
-      </div>
-    </div>
-    <button class="btn btn-ghost" id="btn-today-week">Hoy</button>
-    <button class="btn btn-ghost btn-icon" id="btn-next-week">▶</button>
-    <button class="btn btn-ghost no-print" id="btn-print-week" title="Imprimir este equipo">🖨️</button>
-    <button class="btn btn-ghost no-print" id="btn-print-all" title="Imprimir todos los equipos">🖨️ Todos</button>
-  `;
-
-  const grid = panel.querySelector('#week-grid');
-  if (grid) {
-    panel.insertBefore(nav, grid);
-  } else {
-    panel.appendChild(nav);
-
-    if (isPortero) {
-      _renderPorteroHeader(panel, monday, days, weekId, season);
-    } else {
-      _renderGrid(panel, monday, days, weekId, season);
-    }
-
-    // ── OBS SEMANA — debajo del grid ──
-    const obsWrap = document.createElement('div');
-    obsWrap.id = 'week-obs-wrap';
-    obsWrap.style.cssText = 'padding:12px clamp(8px,6vw,120px) 20px;';
-    obsWrap.innerHTML = `
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;
-        letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;">
-        Observaciones del microciclo
-      </div>
-      <div style="display:flex;gap:8px;align-items:flex-start;">
-        <textarea id="week-obs-input" rows="3"
-          placeholder="Escribe aquí las observaciones de esta semana..."
-          style="flex:1;font-size:12px;padding:8px;border:1px solid var(--border-default);
-            border-radius:var(--radius-sm);background:var(--bg-raised);color:var(--text-primary);
-            resize:vertical;font-family:var(--font-sans);line-height:1.5;"></textarea>
-        <button id="btn-save-week-obs" class="btn btn-ghost btn-sm no-print"
-          style="font-size:11px;white-space:nowrap;">Guardar</button>
-      </div>
-    `;
-    panel.appendChild(obsWrap);
-
-    getWeekNotes(season.seasonKey, porterosState.activeTeam, weekId).then(notes => {
-      const ta = document.getElementById('week-obs-input');
-      if (ta) ta.value = notes || '';
-    }).catch(() => {});
-
-    document.getElementById('btn-save-week-obs').addEventListener('click', async () => {
-      const notes = document.getElementById('week-obs-input')?.value || '';
-      try { await saveWeekNotes(season.seasonKey, porterosState.activeTeam, weekId, notes); }
-      catch (err) { showError('Error: ' + err.message); }
-    });
-  }
-
-  document.getElementById('btn-prev-week').addEventListener('click',  () => navigate(-1));
-  document.getElementById('btn-next-week').addEventListener('click',  () => navigate(1));
-  document.getElementById('btn-today-week').addEventListener('click', () => goToday());
-  document.getElementById('btn-print-week').addEventListener('click', () => {
-    const n = parseInt(prompt('¿Cuántas semanas quieres imprimir? (desde la semana actual)', '1'));
-    if (isNaN(n) || n < 1) return;
-    printWeek(n);
-  });
-  document.getElementById('btn-print-all').addEventListener('click',  () => printAllWeeks());
-
-  document.getElementById('btn-save-micro').addEventListener('click', async () => {
-    const val = parseInt(document.getElementById('micro-input')?.value);
-    if (isNaN(val) || val < 1) return;
-    try {
-      await saveWeekMicro(season.seasonKey, porterosState.activeTeam, weekId, val);
-      _microOverride = val;
-    } catch (err) {
-      showError('Error guardando microciclo: ' + err.message);
-    }
-  });
-}
-
-// ── CABECERA PORTERO INDIVIDUAL ───────────────────
-
-function _renderPorteroHeader(panel, monday, days, weekId, season) {
-  const wrap = document.createElement('div');
-  wrap.id = 'portero-header-wrap';
-  wrap.className = 'no-print';
-  wrap.style.cssText = `
-    display:flex;align-items:center;gap:16px;
-    padding:12px clamp(8px,6vw,120px);
-    background:var(--bg-surface);
-    border-bottom:1px solid var(--border-default);
-    margin-bottom:8px;
-  `;
-
-  wrap.innerHTML = `
-    <div id="portero-photo-area" style="
-      width:80px;height:80px;border-radius:50%;
-      border:2px dashed var(--border-default);
-      overflow:hidden;display:flex;align-items:center;
-      justify-content:center;cursor:pointer;flex-shrink:0;
-      background:var(--bg-raised);position:relative;
-    " title="Haz clic para subir foto">
-      <span id="portero-photo-placeholder" style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px;">📷<br>Foto</span>
-      <img id="portero-photo-img" src="" alt="Foto portero"
-        style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0;" />
-      <input type="file" id="portero-photo-input" accept="image/*"
-        style="position:absolute;inset:0;opacity:0;cursor:pointer;" />
-    </div>
-
-    <div style="flex:1;">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Portero</div>
-      <input type="text" id="portero-name-input"
-        placeholder="Nombre del portero..."
-        value="${window.__edpPorteroName || ''}"
-        style="font-size:22px;font-weight:800;border:none;outline:none;
-          background:transparent;color:var(--text-primary);width:100%;
-          border-bottom:2px solid var(--border-default);padding-bottom:4px;" />
-    </div>
-
-    <button id="btn-save-portero-name" class="btn btn-ghost btn-sm no-print"
-      style="font-size:11px;">Guardar nombre</button>
-  `;
-
-  panel.appendChild(wrap);
-
-  getPorteroPhoto().then(url => {
-    if (url) {
-      window.__edpPorteroPhotoURL = url;
-      _showPorteroPhoto(url);
-    }
-  }).catch(() => {});
-
-  getPorteroName().then(name => {
-    if (name) {
-      window.__edpPorteroName = name;
-      const input = document.getElementById('portero-name-input');
-      if (input) input.value = name;
-    }
-  }).catch(() => {});
-
-  document.getElementById('btn-save-portero-name').addEventListener('click', async () => {
-    const name = document.getElementById('portero-name-input')?.value?.trim() || '';
-    try {
-      await savePorteroName(name);
-      window.__edpPorteroName = name;
-    } catch (err) {
-      showError('Error guardando nombre: ' + err.message);
-    }
-  });
-
-  document.getElementById('portero-photo-input').addEventListener('change', async e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const url = await uploadPorteroPhoto(file);
-      window.__edpPorteroPhotoURL = url;
-      _showPorteroPhoto(url);
-    } catch (err) {
-      showError('Error subiendo foto: ' + err.message);
-    }
-  });
-
-  _renderGrid(panel, monday, days, weekId, season);
-}
-
-function _showPorteroPhoto(url) {
-  const img         = document.getElementById('portero-photo-img');
-  const placeholder = document.getElementById('portero-photo-placeholder');
-  if (img) { img.src = url; img.style.display = 'block'; }
-  if (placeholder) placeholder.style.display = 'none';
-}
-
-// ── GRID SEMANAL ──────────────────────────────────
-
-function _renderGrid(panel, monday, days, weekId, season) {
-  const grid = document.createElement('div');
-  grid.className = 'week-grid';
-  grid.id = 'week-grid';
-  panel.appendChild(grid);
-
-  const today = new Date();
-  days.forEach(date => {
-    const col = renderDayColumn(date, null, isSameDay(date, today));
-    col.dataset.dateKey = toDateKey(date);
-    grid.appendChild(col);
-  });
-
-  if (_unsubPlans) { _unsubPlans(); _unsubPlans = null; }
-
-  _unsubPlans = listenWeekPlans(
-    season.seasonKey,
-    porterosState.activeTeam,
-    weekId,
-    plans => {
-      const byDate = {};
-      plans.forEach(p => { byDate[p.date] = p; });
-      window.__edpWeekPlans = byDate;
-
-      const g = document.getElementById('week-grid');
-      if (!g) return;
-      g.innerHTML = '';
-      days.forEach(date => {
-        const col = renderDayColumn(date, byDate[toDateKey(date)] || null, isSameDay(date, today));
-        col.dataset.dateKey = toDateKey(date);
-        g.appendChild(col);
+    if (window.__edpPorteroName) {
+      const porteroPlans = await loadTeamPlans(season.seasonKey, PORTERO_TEAM.key, weekId, days);
+      const porteroObs   = await getWeekNotes(season.seasonKey, PORTERO_TEAM.key, weekId).catch(() => '');
+      const porteroInfo  = getMicroInfoForTeam(monday, PORTERO_TEAM.key, porterosState.microciclos);
+      sheetsData.push({
+        teamFull: window.__edpPorteroName || 'Portero',
+        plans:    porteroPlans,
+        photoURL: window.__edpPorteroPhotoURL || null,
+        weekLabel,
+        microN:     porteroInfo.number,
+        microPhase: porteroInfo.phase,
+        monday,
+        weekObs: porteroObs,
       });
-    },
-    err => showError('Error cargando semana: ' + err.message),
-  );
+    }
+
+    const coverHTML  = buildCover({ weekLabel, season, logoSrc });
+    const sheetsHTML = sheetsData.map(s =>
+      buildSheetHTML({ ...s, season, icons, logoSrc })
+    ).join('');
+
+    const html = buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, weekLabel);
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 600);
+  } catch (err) {
+    win.close();
+    alert('Error cargando planificaciones: ' + err.message);
+  } finally {
+    document.body.removeChild(loadingEl);
+  }
 }
 
-function navigate(n) {
-  setPorterosState({ currentMonday: addWeeks(porterosState.currentMonday, n) });
-  renderWeekPlanning();
+function loadTeamPlans(seasonKey, teamKey, weekId, days) {
+  return new Promise((resolve, reject) => {
+    const unsub = listenWeekPlans(seasonKey, teamKey, weekId,
+      plans => {
+        unsub();
+        const byDate = {};
+        plans.forEach(p => { byDate[p.date] = p; });
+        resolve(byDate);
+      },
+      err => { unsub(); reject(err); }
+    );
+    setTimeout(() => { try { unsub(); } catch(_){} resolve({}); }, 5000);
+  });
 }
 
-function goToday() {
-  setPorterosState({ currentMonday: getMondayOfWeek(new Date()) });
-  renderWeekPlanning();
+function getWeekKey(monday) {
+  const y  = monday.getFullYear();
+  const d  = new Date(Date.UTC(monday.getFullYear(), monday.getMonth(), monday.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const wn = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  return `${y}-W${wn.toString().padStart(2, '0')}`;
 }
 
-// ================================================
-// VISTA MESOCICLO (F7)
-// ================================================
+function buildHTMLWrapper(contentHTML, logoSrc, title) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Microciclo - Departamento GK — ${safeText(title)}</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: 'Segoe UI', sans-serif; font-size: 10px; color: #111; background: #fff; }
+    .page-break { page-break-after: always; break-after: page; height: 0; }
 
-function _renderMesoView(panel, season) {
-  if (!season) {
-    panel.innerHTML = `<div class="state-empty"><div class="state-empty-icon">📅</div><p>No hay temporada activa.<br>Crea una en <strong>Configuración</strong>.</p></div>`;
+    .cover { background: #1d4ed8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; width: 100%; height: 190mm; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+    .cover-logo { width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.95) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #93c5fd; }
+    .cover-logo img { width: 84px; height: 84px; object-fit: contain; }
+    .cover-title  { font-size: 42px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.05em; text-align: center; }
+    .cover-sub    { font-size: 20px; font-weight: 600; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.08em; text-align: center; }
+    .cover-name   { font-size: 32px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.06em; text-align: center; text-transform: uppercase; }
+    .cover-week   { font-size: 26px; font-weight: 800; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: rgba(255,255,255,0.12) !important; padding: 12px 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); text-align: center; }
+    .cover-season { font-size: 16px; font-weight: 600; color: #93c5fd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; text-align: center; }
+
+    .print-header { background: #1d4ed8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-bottom: 3px solid #93c5fd; padding: 10px 16px; display: flex; align-items: center; gap: 16px; margin-bottom: 10px; position: relative; }
+    .print-header-logo { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.9) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1.5px solid #93c5fd; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+    .print-header-logo img { width: 40px; height: 40px; object-fit: contain; }
+    .print-header-text  { flex: 1; }
+    .print-header-title { font-size: 14px; font-weight: 800; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.03em; }
+    .print-header-sub   { font-size: 10px; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin-top: 2px; letter-spacing: 0.05em; }
+    .print-header-week  { font-size: 11px; color: #bfdbfe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin-top: 3px; }
+    .print-header-team  { font-size: 28px; font-weight: 900; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; position: absolute; left: 50%; transform: translateX(-50%); }
+    .print-portero-photo { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #93c5fd; overflow: hidden; flex-shrink: 0; margin-left: auto; }
+    .print-portero-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+    .print-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+    .print-day { border: 1px solid #d1d9e6; border-radius: 6px; overflow: visible; min-height: 160px; display: flex; flex-direction: column; background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .print-day-entrenamiento { border-top: 2px solid #2563eb; }
+    .print-day-partido       { border-top: 2px solid #c9a227; }
+    .print-day-descanso      { border-top: 2px solid #d1d9e6; }
+    .print-day-torneo        { border-top: 2px solid #a78bfa; }
+    .print-day-seleccion     { border-top: 2px solid #10b981; }
+    .print-day-header { background: #f0f4fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 4px 6px; border-bottom: 1px solid #d1d9e6; }
+    .print-day-name   { font-size: 8px; font-weight: 700; letter-spacing: 0.1em; color: #666; text-transform: uppercase; }
+    .print-day-number { font-size: 20px; font-weight: 800; line-height: 1; color: #111; }
+    .print-day-date   { font-size: 8px; color: #888; }
+    .print-day-content { flex: 1; padding: 5px; display: flex; flex-direction: column; gap: 4px; }
+
+    .print-block { border: 1px solid #e8eef8; border-left: 2px solid #2563eb; border-radius: 4px; padding: 4px 5px; }
+    .print-block-header { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+    .print-block-icon    { width: 16px; height: 16px; object-fit: contain; }
+    .print-block-name    { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #0f1117; }
+    .print-block-content { font-size: 8px; color: #333; margin-top: 2px; line-height: 1.4; }
+    .print-block-meta    { font-size: 8px; margin-top: 2px; line-height: 1.6; }
+    .meta-alta  { color: #ef4444 !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .meta-media { color: #f59e0b !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .meta-baja  { color: #22c55e !important; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    .print-vertical { flex: 1; display: flex; align-items: center; justify-content: center; padding: 6px 0; }
+    .print-vertical-word { font-size: 18px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; line-height: 1.3; }
+    .partido   { color: #c9a227 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .descanso  { color: #9ca3af !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .torneo    { color: #a78bfa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .viaje     { color: #6ee7b7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .seleccion { color: #10b981 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    .print-match-info { font-size: 8px; color: #333; padding: 3px 5px; line-height: 1.6; }
+    .print-empty { font-size: 9px; color: #bbb; text-align: center; padding: 10px 4px; flex: 1; display: flex; align-items: center; justify-content: center; }
+
+    .print-obs { margin-top: 8px; padding: 6px 8px; border: 1px solid #d1d9e6; border-left: 3px solid #2563eb; border-radius: 4px; background: #f8fafd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .print-obs-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #666; margin-bottom: 3px; }
+    .print-obs-text  { font-size: 9px; color: #333; line-height: 1.5; }
+
+    .meso-print-outer { width: 277mm; height: 190mm; overflow: hidden; position: relative; page-break-inside: avoid; break-inside: avoid; }
+    .meso-print-page { position: absolute; top: 0; left: 0; transform-origin: top left; }
+    .meso-print-header { margin-bottom: 6px; }
+    .meso-print-grid { display: flex; flex-direction: column; gap: 4px; }
+    .meso-print-row { display: grid; grid-template-columns: 70px repeat(7, 1fr); gap: 4px; align-items: stretch; }
+    .meso-print-label { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 8px; font-weight: 800; color: #333; background: #f0f4fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1px solid #d1d9e6; border-radius: 6px; padding: 3px; line-height: 1.3; }
+    .meso-print-label span { font-size: 7px; font-weight: 600; color: #666; }
+  </style>
+</head>
+<body>
+  ${contentHTML}
+</body>
+</html>`;
+}
+
+function buildCover({ weekLabel, season, logoSrc }) {
+  const [start, end] = weekLabel.split(' — ');
+  const year      = end?.split('/')?.pop() || '';
+  const startFull = start && year ? `${start}/${year}` : start;
+  const endFull   = end || '';
+  return `
+    <div class="cover">
+      <div class="cover-logo"><img src="${logoSrc}" alt="RM" /></div>
+      <div class="cover-title">Microciclo - Departamento GK</div>
+      <div class="cover-sub">Planificación semanal de porteros</div>
+      <div class="cover-week">📅 ${safeText(startFull)} - ${safeText(endFull)}</div>
+      <div class="cover-season">${safeText(season.name || season.seasonKey)}</div>
+    </div>
+    <div class="page-break"></div>
+  `;
+}
+
+function buildPorteroCover({ teamFull, weekLabelFirst, weekLabelLast, season, logoSrc }) {
+  const [startFirst] = weekLabelFirst.split(' — ');
+  const [, endLast]  = weekLabelLast.split(' — ');
+  const year      = endLast?.split('/')?.pop() || '';
+  const startFull = startFirst && year ? `${startFirst}/${year}` : startFirst;
+  const endFull   = endLast || '';
+  return `
+    <div class="cover">
+      <div class="cover-logo"><img src="${logoSrc}" alt="RM" /></div>
+      <div class="cover-title">Microciclo - Departamento GK</div>
+      <div class="cover-name">${safeText(teamFull)}</div>
+      <div class="cover-week">📅 ${safeText(startFull)} - ${safeText(endFull)}</div>
+      <div class="cover-season">${safeText(season.name || season.seasonKey)}</div>
+    </div>
+    <div class="page-break"></div>
+  `;
+}
+
+function buildSheetHTML({ teamFull, plans, photoURL, weekObs, season, microN, microPhase, monday, icons, weekLabel, logoSrc }) {
+  const days     = getWeekDays(monday);
+  const daysHTML = days.map(date => {
+    const key  = toDateKey(date);
+    const plan = plans[key] || null;
+    return buildDayHTML(date, plan, icons);
+  }).join('');
+
+  const [start, end] = weekLabel.split(' — ');
+  const year      = end?.split('/')?.pop() || '';
+  const startFull = start && year ? `${start}/${year}` : start;
+
+  const photoHTML = photoURL ? `
+    <div class="print-portero-photo">
+      <img src="${safeText(photoURL)}" alt="Portero" />
+    </div>
+  ` : '';
+
+  const obsHTML = weekObs ? `
+    <div class="print-obs">
+      <div class="print-obs-label">Observaciones del microciclo</div>
+      <div class="print-obs-text">${safeText(weekObs)}</div>
+    </div>
+  ` : '';
+
+  return `
+    <div>
+      <div class="print-header">
+        <div class="print-header-logo"><img src="${logoSrc}" alt="RM" /></div>
+        <div class="print-header-text">
+          <div class="print-header-title">Microciclo - Departamento GK</div>
+          <div class="print-header-sub">Planificación semanal de porteros</div>
+          <div class="print-header-week">📅 ${safeText(startFull)} - ${safeText(end || '')} &nbsp;·&nbsp; Microciclo ${microN}${microPhase ? ` (${microPhase === 'competicion' ? 'Competición' : 'Pretemporada'})` : ''}</div>
+        </div>
+        <div class="print-header-team">${safeText(teamFull)}</div>
+        ${photoHTML}
+      </div>
+      <div class="print-grid">${daysHTML}</div>
+      ${obsHTML}
+    </div>
+    <div class="page-break"></div>
+  `;
+}
+
+function buildDayHTML(date, plan, icons) {
+  const dayName = getDayName(date).toUpperCase();
+  const dayNum  = date.getDate();
+  const mo      = String(date.getMonth() + 1).padStart(2, '0');
+  const dd      = String(date.getDate()).padStart(2, '0');
+  const yyyy    = date.getFullYear();
+  const dateStr = `${dd}/${mo}/${yyyy}`;
+  const dayType = plan?.dayType || '';
+
+  return `
+    <div class="print-day print-day-${dayType || 'libre'}">
+      <div class="print-day-header">
+        <div class="print-day-name">${dayName}</div>
+        <div class="print-day-number">${dayNum}</div>
+        <div class="print-day-date">${dateStr}</div>
+      </div>
+      <div class="print-day-content">${buildDayContent(dayType, plan, icons)}</div>
+    </div>
+  `;
+}
+
+function buildDayContent(dayType, plan, icons) {
+  if (!dayType || dayType === 'libre') return `<div class="print-empty">Sin planificación</div>`;
+  if (dayType === 'descanso')  return `<div class="print-vertical"><span class="print-vertical-word descanso">${'DESCANSO'.split('').join('<br>')}</span></div>`;
+  if (dayType === 'seleccion') return `<div class="print-vertical"><span class="print-vertical-word seleccion">${'SELECCIÓN'.split('').join('<br>')}</span></div>`;
+  if (dayType === 'viaje')     return `<div class="print-vertical"><span class="print-vertical-word viaje">${'VIAJE'.split('').join('<br>')}</span></div>`;
+  if (dayType === 'partido') {
+    const mi = plan?.matchInfo || {};
+    return `
+      <div class="print-vertical"><span class="print-vertical-word partido">${'PARTIDO'.split('').join('<br>')}</span></div>
+      ${mi.rival || mi.hora ? `<div class="print-match-info">
+        ${mi.rival          ? `<div><strong>vs</strong> ${safeText(mi.rival)}</div>` : ''}
+        ${mi.localVisitante ? `<div>${safeText(mi.localVisitante)}</div>`            : ''}
+        ${mi.hora           ? `<div>⏰ ${safeText(mi.hora)}</div>`                  : ''}
+        ${mi.competicion    ? `<div>${safeText(mi.competicion)}</div>`               : ''}
+      </div>` : ''}
+    `;
+  }
+  if (dayType === 'torneo') {
+    const ti = plan?.tournamentInfo || {};
+    return `
+      <div class="print-vertical"><span class="print-vertical-word torneo">${'TORNEO'.split('').join('<br>')}</span></div>
+      ${ti.nombre ? `<div class="print-match-info"><div><strong>${safeText(ti.nombre)}</strong></div>${ti.lugar ? `<div>📍 ${safeText(ti.lugar)}</div>` : ''}</div>` : ''}
+    `;
+  }
+  if (dayType === 'entrenamiento') {
+    const blocks = plan?.blocks || [];
+    if (blocks.length === 0) return `<div class="print-empty">Sin bloques</div>`;
+    return blocks.map(block => buildBlockHTML(block, icons)).join('');
+  }
+  return `<div class="print-empty">Sin planificación</div>`;
+}
+
+function buildBlockHTML(block, icons) {
+  const def     = BLOCK_TYPES.find(b => b.key === block.blockType);
+  const label   = def?.label || block.blockType;
+  const iconSrc = icons[def?.iconKey] || '';
+  const isCampo = block.blockType === 'entrenamiento_campo';
+  const intensidadClass = block.intensidad ? `meta-${block.intensidad.toLowerCase()}` : '';
+  const impactosClass   = block.impactos   ? `meta-${block.impactos.toLowerCase()}`   : '';
+
+  return `
+    <div class="print-block">
+      <div class="print-block-header">
+        ${iconSrc ? `<img src="${safeText(iconSrc)}" class="print-block-icon" />` : ''}
+        <span class="print-block-name">${safeText(label)}</span>
+      </div>
+      ${block.content ? `<div class="print-block-content">${safeText(block.content)}</div>` : ''}
+      ${isCampo && (block.intensidad || block.impactos) ? `
+        <div class="print-block-meta">
+          ${block.intensidad ? `<div>INTENSIDAD: <span class="${intensidadClass}">${safeText(block.intensidad)}</span></div>` : ''}
+          ${block.impactos   ? `<div>IMPACTOS: <span class="${impactosClass}">${safeText(block.impactos)}</span></div>`       : ''}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+// ── IMPRESIÓN MESOCICLO (F7) — 1 SOLA HOJA ────────
+
+export async function printMesociclo() {
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('El navegador bloqueó la ventana emergente. Permite popups para esta página.');
     return;
   }
 
-  const mesociclos = porterosState.mesociclosF7 || {};
-
-  if (!porterosState.currentMeso || !mesociclos[porterosState.currentMeso]?.startDate) {
-    setPorterosState({ currentMeso: getCurrentMesoKey(mesociclos) });
-  }
+  const season  = porterosState.activeSeason;
   const mesoKey = porterosState.currentMeso;
-  const meso    = mesoKey ? mesociclos[mesoKey] : null;
+  const meso    = porterosState.mesociclosF7?.[mesoKey];
+  const icons   = porterosState.icons || {};
 
-  if (!meso?.startDate) {
-    panel.innerHTML = `<div class="state-empty"><div class="state-empty-icon">📅</div><p>Define los mesociclos de F7 en <strong>Configuración</strong>.</p></div>`;
+  if (!season || !meso?.startDate) {
+    win.close();
+    alert('Selecciona un mesociclo válido antes de imprimir.');
     return;
   }
 
-  const weeks    = getMesoWeeks(meso);
+  const weeks   = getMesoWeeks(meso);
+  const logoSrc = icons.logo || './rm.png';
+
+  const loadingEl = document.createElement('div');
+  loadingEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;font-family:Segoe UI,sans-serif;';
+  loadingEl.textContent = `Cargando mesociclo ${mesoKey.replace('M', '')}...`;
+  document.body.appendChild(loadingEl);
+
+  try {
+    const weeksPlans = [];
+    for (let i = 0; i < weeks.length; i++) {
+      const weekId = getWeekKey(weeks[i]);
+      const plans  = await loadTeamPlans(season.seasonKey, 'F7', weekId, getWeekDays(weeks[i]));
+      weeksPlans.push(plans);
+    }
+
+    const pageHTML = buildMesoSinglePage({ mesoKey, weeks, weeksPlans, season, icons, logoSrc });
+    const html = buildHTMLWrapper(pageHTML, logoSrc, `Mesociclo ${mesoKey.replace('M', '')}`);
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 700);
+  } catch (err) {
+    win.close();
+    alert('Error: ' + err.message);
+  } finally {
+    document.body.removeChild(loadingEl);
+  }
+}
+
+function buildMesoSinglePage({ mesoKey, weeks, weeksPlans, season, icons, logoSrc }) {
   const rangeEnd = addWeeks(weeks[weeks.length - 1], 1);
   rangeEnd.setDate(rangeEnd.getDate() - 1);
 
-  const nav = document.createElement('div');
-  nav.className = 'week-nav no-print';
-  nav.innerHTML = `
-    <button class="btn btn-ghost btn-icon" id="btn-prev-meso">◀</button>
-    <div class="week-nav-info">
-      <div class="week-nav-label">Mesociclo ${mesoKey.replace('M', '')}</div>
-      <div class="week-nav-sub">${formatDate(weeks[0])} — ${formatDate(rangeEnd)} · ${season.name || season.seasonKey}</div>
-    </div>
-    <button class="btn btn-ghost btn-icon" id="btn-next-meso">▶</button>
-    <button class="btn btn-ghost no-print" id="btn-print-meso" title="Imprimir mesociclo completo">🖨️</button>
-    <button class="btn btn-ghost no-print" id="btn-print-all-f7" title="Imprimir todos los equipos (semana actual)">🖨️ Todos</button>
-  `;
-  panel.appendChild(nav);
-
-  document.getElementById('btn-prev-meso').addEventListener('click', () => {
-    setPorterosState({ currentMeso: getAdjacentMesoKey(mesociclos, mesoKey, -1) });
-    renderWeekPlanning();
-  });
-  document.getElementById('btn-next-meso').addEventListener('click', () => {
-    setPorterosState({ currentMeso: getAdjacentMesoKey(mesociclos, mesoKey, 1) });
-    renderWeekPlanning();
-  });
-  document.getElementById('btn-print-meso').addEventListener('click', () => printMesociclo());
-  document.getElementById('btn-print-all-f7').addEventListener('click', () => {
-    setPorterosState({ currentMonday: weeks[0] });
-    printAllWeeks();
-  });
-
-  const grid = document.createElement('div');
-  grid.className = 'meso-grid';
-  panel.appendChild(grid);
-
-  renderMesoGridRows(grid, weeks, season);
-}
-
-function renderMesoGridRows(grid, weeks, season) {
-  grid.innerHTML = '';
-
-  const header = document.createElement('div');
-  header.className = 'meso-row meso-header';
-  header.innerHTML = `<div class="meso-label"></div>` +
-    ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM']
-      .map(d => `<div class="meso-daylabel">${d}</div>`).join('');
-  grid.appendChild(header);
-
-  const today = new Date();
-
-  weeks.forEach((monday, i) => {
-    const weekId = getWeekKey(monday);
+  const rowsHTML = weeks.map((monday, i) => {
     const days   = getWeekDays(monday);
     const rEnd   = addWeeks(monday, 1);
     rEnd.setDate(rEnd.getDate() - 1);
+    const byDate = weeksPlans[i] || {};
+    const daysHTML = days.map(date =>
+      buildDayHTML(date, byDate[toDateKey(date)] || null, icons)
+    ).join('');
+    return `
+      <div class="meso-print-row">
+        <div class="meso-print-label">MC${i + 1}<br><span>${safeText(formatDate(monday))}–${safeText(formatDate(rEnd))}</span></div>
+        ${daysHTML}
+      </div>
+    `;
+  }).join('');
 
-    const row = document.createElement('div');
-    row.className = 'meso-row';
-    row.innerHTML = `<div class="meso-label">Microciclo ${i + 1}<br><span>${formatDate(monday)}–${formatDate(rEnd)}</span></div>`;
-    grid.appendChild(row);
+  return `
+    <div class="meso-print-outer" id="meso-print-outer">
+      <div class="meso-print-page" id="meso-print-page">
+        <div class="print-header meso-print-header">
+          <div class="print-header-logo"><img src="${logoSrc}" alt="RM" /></div>
+          <div class="print-header-text">
+            <div class="print-header-title">Fútbol 7 — Mesociclo ${mesoKey.replace('M', '')}</div>
+            <div class="print-header-sub">Planificación completa del mesociclo</div>
+            <div class="print-header-week">📅 ${safeText(formatDate(weeks[0]))} - ${safeText(formatDate(rangeEnd))} · ${safeText(season.name || season.seasonKey)}</div>
+          </div>
+        </div>
+        <div class="meso-print-grid">${rowsHTML}</div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        function scaleMesoPage() {
+          var outer = document.getElementById('meso-print-outer');
+          var page  = document.getElementById('meso-print-page');
+          if (!outer || !page) return;
+          var PX_PER_MM = 96 / 25.4;
+          var pageWidthPx  = 277 * PX_PER_MM;
+          var pageHeightPx = 190 * PX_PER_MM;
 
-    rerenderMesoRow(row, days, {}, today);
+          page.style.transform = 'none';
+          page.style.width = pageWidthPx + 'px';
+          var natural = page.scrollHeight || 1;
+          var scale = Math.min(1, pageHeightPx / natural);
+          if (!isFinite(scale) || scale <= 0) scale = 1;
 
-    const unsub = listenWeekPlans(season.seasonKey, 'F7', weekId,
-      plans => {
-        const byDate = {};
-        plans.forEach(p => { byDate[p.date] = p; });
-        rerenderMesoRow(row, days, byDate, today);
-      },
-      err => showError('Error cargando microciclo ' + (i + 1) + ': ' + err.message),
-    );
-    _unsubMesoPlans.push(unsub);
-  });
-}
-
-function rerenderMesoRow(row, days, byDate, today) {
-  row.querySelectorAll('.day-col').forEach(el => el.remove());
-  days.forEach(date => {
-    const col = renderDayColumn(date, byDate[toDateKey(date)] || null, isSameDay(date, today));
-    col.dataset.dateKey = toDateKey(date);
-    row.appendChild(col);
-  });
+          page.style.width = (pageWidthPx / scale) + 'px';
+          page.style.transform = 'scale(' + scale + ')';
+        }
+        scaleMesoPage();
+        requestAnimationFrame(scaleMesoPage);
+        window.addEventListener('load', scaleMesoPage);
+        window.addEventListener('beforeprint', scaleMesoPage);
+        window.addEventListener('resize', scaleMesoPage);
+      })();
+    </script>
+  `;
 }
