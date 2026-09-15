@@ -92,9 +92,10 @@ function loadConfig() {
   listenConfig(
     cfg => {
       setPorterosState({
-        icons:       cfg.icons       || PORTEROS_ICONS,
-        microciclos: cfg.microciclos || {},
-        conceptos:   cfg.conceptos   || {},
+        icons:        cfg.icons        || PORTEROS_ICONS,
+        microciclos:  cfg.microciclos  || {},
+        conceptos:    cfg.conceptos    || {},
+        mesociclosF7: cfg.mesociclos_f7 || {},
       });
       renderHeader();
     },
