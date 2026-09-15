@@ -359,12 +359,41 @@ function renderMesoList() {
     return `
       <div style="display:grid;grid-template-columns:32px 1fr 60px;align-items:center;gap:8px;margin-bottom:6px;">
         <span class="fw-700" style="font-size:12px;">${key}</span>
-        <input type="date" class="input" id="meso-date-${key}" value="${m.startDate || ''}" />
-        <input type="number" class="input" id="meso-weeks-${key}" value="${m.numWeeks ?? 4}"
-          min="1" max="8" title="Nº semanas" style="text-align:center;" />
+        <input type="date" class="input meso-date" id="meso-date-${key}" data-key="${key}"
+          value="${m.startDate || ''}" data-auto="${m.startDate ? '0' : '1'}" />
+        <input type="number" class="input meso-weeks" id="meso-weeks-${key}" data-key="${key}"
+          value="${m.numWeeks ?? 4}" min="1" max="8" title="Nº semanas" style="text-align:center;" />
       </div>
     `;
   }).join('');
+
+  list.querySelectorAll('.meso-date').forEach(el => {
+    el.addEventListener('input', () => {
+      el.dataset.auto = '0';
+      cascadeMesoAutofill(el.dataset.key);
+    });
+  });
+  list.querySelectorAll('.meso-weeks').forEach(el => {
+    el.addEventListener('input', () => cascadeMesoAutofill(el.dataset.key));
+  });
+}
+
+// Autocompleta el inicio del siguiente mesociclo (start + numWeeks) mientras
+// el usuario no haya confirmado (tocado) manualmente esa fecha. En cuanto
+// confirma una, la cascada se detiene ahí — por si hay vacaciones o ajustes.
+function cascadeMesoAutofill(fromKey) {
+  const startIdx = parseInt(fromKey.replace('M', ''));
+  for (let i = startIdx; i < 9; i++) {
+    const curDate   = document.getElementById(`meso-date-M${i}`)?.value;
+    const curWeeks  = parseInt(document.getElementById(`meso-weeks-M${i}`)?.value) || 4;
+    const nextInput = document.getElementById(`meso-date-M${i + 1}`);
+    if (!curDate || !nextInput) break;
+    if (nextInput.dataset.auto === '0') break;
+    const d = new Date(curDate);
+    d.setDate(d.getDate() + curWeeks * 7);
+    nextInput.value = d.toISOString().slice(0, 10);
+    nextInput.dataset.auto = '1';
+  }
 }
 
 async function saveMesociclos() {
