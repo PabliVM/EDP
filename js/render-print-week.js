@@ -46,13 +46,15 @@ export async function printWeek(numWeeks = 1) {
       const weekMonday = addWeeks(monday, i);
       const weekId     = getWeekKey(weekMonday);
       const weekLabel  = formatWeekRange(weekMonday);
-      const microN     = getMicroInfoForTeam(weekMonday, team, porterosState.microciclos).number;
+      const microInfo  = getMicroInfoForTeam(weekMonday, team, porterosState.microciclos);
+      const microN     = microInfo.number;
+      const microPhase = microInfo.phase;
       const plans      = i === 0 && numWeeks === 1
         ? (window.__edpWeekPlans || {})
         : await loadTeamPlans(season.seasonKey, team, weekId, getWeekDays(weekMonday));
       const weekObs    = await getWeekNotes(season.seasonKey, team, weekId).catch(() => '');
 
-      sheetsData.push({ teamFull, plans, photoURL, weekLabel, microN, monday: weekMonday, weekObs });
+      sheetsData.push({ teamFull, plans, photoURL, weekLabel, microN, microPhase, monday: weekMonday, weekObs });
     }
 
     const coverHTML  = isPortero
@@ -114,25 +116,31 @@ export async function printAllWeeks() {
       PORTEROS_TEAMS.map(team => loadTeamPlans(season.seasonKey, team.key, weekId, days))
     );
 
-    const sheetsData = await Promise.all(PORTEROS_TEAMS.map(async (team, i) => ({
-      teamFull: team.full,
-      plans:    teamsData[i],
-      photoURL: null,
-      weekLabel,
-      microN: getMicroInfoForTeam(monday, team.key, porterosState.microciclos).number,
-      monday,
-      weekObs: await getWeekNotes(season.seasonKey, team.key, weekId).catch(() => ''),
-    })));
+    const sheetsData = await Promise.all(PORTEROS_TEAMS.map(async (team, i) => {
+      const info = getMicroInfoForTeam(monday, team.key, porterosState.microciclos);
+      return {
+        teamFull: team.full,
+        plans:    teamsData[i],
+        photoURL: null,
+        weekLabel,
+        microN:     info.number,
+        microPhase: info.phase,
+        monday,
+        weekObs: await getWeekNotes(season.seasonKey, team.key, weekId).catch(() => ''),
+      };
+    }));
 
     if (window.__edpPorteroName) {
       const porteroPlans = await loadTeamPlans(season.seasonKey, PORTERO_TEAM.key, weekId, days);
       const porteroObs   = await getWeekNotes(season.seasonKey, PORTERO_TEAM.key, weekId).catch(() => '');
+      const porteroInfo  = getMicroInfoForTeam(monday, PORTERO_TEAM.key, porterosState.microciclos);
       sheetsData.push({
         teamFull: window.__edpPorteroName || 'Portero',
         plans:    porteroPlans,
         photoURL: window.__edpPorteroPhotoURL || null,
         weekLabel,
-        microN: getMicroInfoForTeam(monday, PORTERO_TEAM.key, porterosState.microciclos).number,
+        microN:     porteroInfo.number,
+        microPhase: porteroInfo.phase,
         monday,
         weekObs: porteroObs,
       });
@@ -300,7 +308,7 @@ function buildPorteroCover({ teamFull, weekLabelFirst, weekLabelLast, season, lo
   `;
 }
 
-function buildSheetHTML({ teamFull, plans, photoURL, weekObs, season, microN, monday, icons, weekLabel, logoSrc }) {
+function buildSheetHTML({ teamFull, plans, photoURL, weekObs, season, microN, microPhase, monday, icons, weekLabel, logoSrc }) {
   const days     = getWeekDays(monday);
   const daysHTML = days.map(date => {
     const key  = toDateKey(date);
@@ -332,7 +340,7 @@ function buildSheetHTML({ teamFull, plans, photoURL, weekObs, season, microN, mo
         <div class="print-header-text">
           <div class="print-header-title">Microciclo - Departamento GK</div>
           <div class="print-header-sub">Planificación semanal de porteros</div>
-          <div class="print-header-week">📅 ${safeText(startFull)} - ${safeText(end || '')} &nbsp;·&nbsp; Microciclo ${microN}</div>
+          <div class="print-header-week">📅 ${safeText(startFull)} - ${safeText(end || '')} &nbsp;·&nbsp; Microciclo ${microN}${microPhase ? ` (${microPhase === 'competicion' ? 'Competición' : 'Pretemporada'})` : ''}</div>
         </div>
         <div class="print-header-team">${safeText(teamFull)}</div>
         ${photoHTML}
