@@ -7,7 +7,7 @@ import { PORTERO_TEAM }                from './porteros-constants.js';
 import {
   getMondayOfWeek, getWeekDays, addWeeks,
   formatWeekRange, getWeekKey, getMicroNumber,
-  getMicroNumberForTeam, toDateKey, isSameDay, formatDate,
+  getMicroInfoForTeam, toDateKey, isSameDay, formatDate,
   getMesoWeeks, getCurrentMesoKey, getAdjacentMesoKey,
 } from './dates.js';
 import {
@@ -54,20 +54,17 @@ export function renderWeekPlanning() {
   const weekId    = getWeekKey(monday);
   const season    = porterosState.activeSeason;
 
-  const microBase = getMicroNumberForTeam(
-    monday,
-    porterosState.activeTeam,
-    porterosState.microciclos,
-  );
+  const microInfo = getMicroInfoForTeam(monday, porterosState.activeTeam, porterosState.microciclos);
+  const microBase  = microInfo.number;
 
   _microOverride = null;
   getWeekMicro(season.seasonKey, porterosState.activeTeam, weekId)
     .then(saved => {
       _microOverride = saved;
-      _renderNav(panel, monday, days, weekId, microBase, season, isPortero);
+      _renderNav(panel, monday, days, weekId, microBase, season, isPortero, microInfo.phase);
     })
     .catch(() => {
-      _renderNav(panel, monday, days, weekId, microBase, season, isPortero);
+      _renderNav(panel, monday, days, weekId, microBase, season, isPortero, microInfo.phase);
     });
 
   upsertWeek({
@@ -83,11 +80,12 @@ export function renderWeekPlanning() {
   _renderNav(panel, monday, days, weekId, microBase, season, isPortero);
 }
 
-function _renderNav(panel, monday, days, weekId, microBase, season, isPortero) {
+function _renderNav(panel, monday, days, weekId, microBase, season, isPortero, microPhase) {
   const oldNav = panel.querySelector('.week-nav');
   if (oldNav) oldNav.remove();
 
   const microN = _microOverride ?? microBase;
+  const phaseLabel = microPhase === 'competicion' ? ' (Comp.)' : microPhase === 'pretemporada' ? ' (Pretemp.)' : '';
 
   const nav = document.createElement('div');
   nav.className = 'week-nav no-print';
@@ -96,7 +94,7 @@ function _renderNav(panel, monday, days, weekId, microBase, season, isPortero) {
     <div class="week-nav-info">
       <div class="week-nav-label">${formatWeekRange(monday)}</div>
       <div class="week-nav-sub" style="display:flex;align-items:center;gap:6px;justify-content:center;">
-        <span>Microciclo</span>
+        <span>Microciclo${phaseLabel}</span>
         <input type="number" id="micro-input"
           value="${microN}" min="1" max="99"
           style="width:48px;text-align:center;font-size:11px;font-weight:700;
@@ -359,6 +357,7 @@ function _renderMesoView(panel, season) {
     </div>
     <button class="btn btn-ghost btn-icon" id="btn-next-meso">▶</button>
     <button class="btn btn-ghost no-print" id="btn-print-meso" title="Imprimir mesociclo completo">🖨️</button>
+    <button class="btn btn-ghost no-print" id="btn-print-all-f7" title="Imprimir todos los equipos (semana actual)">🖨️ Todos</button>
   `;
   panel.appendChild(nav);
 
@@ -371,6 +370,10 @@ function _renderMesoView(panel, season) {
     renderWeekPlanning();
   });
   document.getElementById('btn-print-meso').addEventListener('click', () => printMesociclo());
+  document.getElementById('btn-print-all-f7').addEventListener('click', () => {
+    setPorterosState({ currentMonday: weeks[0] });
+    printAllWeeks();
+  });
 
   const grid = document.createElement('div');
   grid.className = 'meso-grid';
