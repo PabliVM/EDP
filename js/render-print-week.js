@@ -214,7 +214,7 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
     .print-portero-photo img { width: 100%; height: 100%; object-fit: cover; }
 
     .print-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-    .print-day { border: 1px solid #d1d9e6; border-radius: 6px; overflow: hidden; min-height: 160px; display: flex; flex-direction: column; background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .print-day { border: 1px solid #d1d9e6; border-radius: 6px; overflow: visible; min-height: 160px; display: flex; flex-direction: column; background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .print-day-entrenamiento { border-top: 2px solid #2563eb; }
     .print-day-partido       { border-top: 2px solid #c9a227; }
     .print-day-descanso      { border-top: 2px solid #d1d9e6; }
