@@ -250,6 +250,14 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
     .print-obs { margin-top: 8px; padding: 6px 8px; border: 1px solid #d1d9e6; border-left: 3px solid #2563eb; border-radius: 4px; background: #f8fafd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .print-obs-label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #666; margin-bottom: 3px; }
     .print-obs-text  { font-size: 9px; color: #333; line-height: 1.5; }
+
+    .meso-print-outer { width: 277mm; height: 190mm; overflow: hidden; position: relative; page-break-inside: avoid; break-inside: avoid; }
+    .meso-print-page { position: absolute; top: 0; left: 0; transform-origin: top left; }
+    .meso-print-header { margin-bottom: 6px; }
+    .meso-print-grid { display: flex; flex-direction: column; gap: 4px; }
+    .meso-print-row { display: grid; grid-template-columns: 70px repeat(7, 1fr); gap: 4px; align-items: stretch; }
+    .meso-print-label { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 8px; font-weight: 800; color: #333; background: #f0f4fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1px solid #d1d9e6; border-radius: 6px; padding: 3px; line-height: 1.3; }
+    .meso-print-label span { font-size: 7px; font-weight: 600; color: #666; }
   </style>
 </head>
 <body>
@@ -414,8 +422,7 @@ function buildBlockHTML(block, icons) {
     </div>
   `;
 }
-
-// ── IMPRESIÓN MESOCICLO (F7) ──────────────────────
+// ── IMPRESIÓN MESOCICLO (F7) — 1 SOLA HOJA ────────
 
 export async function printMesociclo() {
   const win = window.open('', '_blank');
@@ -444,24 +451,19 @@ export async function printMesociclo() {
   document.body.appendChild(loadingEl);
 
   try {
-    const sheetsData = [];
+    const weeksPlans = [];
     for (let i = 0; i < weeks.length; i++) {
-      const weekMonday = weeks[i];
-      const weekId      = getWeekKey(weekMonday);
-      const weekLabel   = formatWeekRange(weekMonday);
-      const plans       = await loadTeamPlans(season.seasonKey, 'F7', weekId, getWeekDays(weekMonday));
-      const weekObs     = await getWeekNotes(season.seasonKey, 'F7', weekId).catch(() => '');
-      sheetsData.push({ teamFull: 'Fútbol 7', plans, photoURL: null, weekLabel, microN: i + 1, monday: weekMonday, weekObs });
+      const weekId = getWeekKey(weeks[i]);
+      const plans  = await loadTeamPlans(season.seasonKey, 'F7', weekId, getWeekDays(weeks[i]));
+      weeksPlans.push(plans);
     }
 
-    const coverHTML  = buildMesoCover({ mesoKey, weeks, season, logoSrc });
-    const sheetsHTML = sheetsData.map(s => buildSheetHTML({ ...s, season, icons, logoSrc })).join('');
-
-    const html = buildHTMLWrapper(coverHTML + sheetsHTML, logoSrc, `Mesociclo ${mesoKey.replace('M', '')}`);
+    const pageHTML = buildMesoSinglePage({ mesoKey, weeks, weeksPlans, season, icons, logoSrc });
+    const html = buildHTMLWrapper(pageHTML, logoSrc, `Mesociclo ${mesoKey.replace('M', '')}`);
     win.document.write(html);
     win.document.close();
     win.focus();
-    setTimeout(() => { win.print(); }, 600);
+    setTimeout(() => { win.print(); }, 700);
   } catch (err) {
     win.close();
     alert('Error: ' + err.message);
@@ -470,17 +472,65 @@ export async function printMesociclo() {
   }
 }
 
-function buildMesoCover({ mesoKey, weeks, season, logoSrc }) {
+function buildMesoSinglePage({ mesoKey, weeks, weeksPlans, season, icons, logoSrc }) {
   const rangeEnd = addWeeks(weeks[weeks.length - 1], 1);
   rangeEnd.setDate(rangeEnd.getDate() - 1);
+
+  const rowsHTML = weeks.map((monday, i) => {
+    const days   = getWeekDays(monday);
+    const rEnd   = addWeeks(monday, 1);
+    rEnd.setDate(rEnd.getDate() - 1);
+    const byDate = weeksPlans[i] || {};
+    const daysHTML = days.map(date =>
+      buildDayHTML(date, byDate[toDateKey(date)] || null, icons)
+    ).join('');
+    return `
+      <div class="meso-print-row">
+        <div class="meso-print-label">MC${i + 1}<br><span>${safeText(formatDate(monday))}–${safeText(formatDate(rEnd))}</span></div>
+        ${daysHTML}
+      </div>
+    `;
+  }).join('');
+
   return `
-    <div class="cover">
-      <div class="cover-logo"><img src="${logoSrc}" alt="RM" /></div>
-      <div class="cover-title">Fútbol 7</div>
-      <div class="cover-sub">Mesociclo ${mesoKey.replace('M', '')} — ${weeks.length} microciclos</div>
-      <div class="cover-week">📅 ${safeText(formatDate(weeks[0]))} - ${safeText(formatDate(rangeEnd))}</div>
-      <div class="cover-season">${safeText(season.name || season.seasonKey)}</div>
+    <div class="meso-print-outer" id="meso-print-outer">
+      <div class="meso-print-page" id="meso-print-page">
+        <div class="print-header meso-print-header">
+          <div class="print-header-logo"><img src="${logoSrc}" alt="RM" /></div>
+          <div class="print-header-text">
+            <div class="print-header-title">Fútbol 7 — Mesociclo ${mesoKey.replace('M', '')}</div>
+            <div class="print-header-sub">Planificación completa del mesociclo</div>
+            <div class="print-header-week">📅 ${safeText(formatDate(weeks[0]))} - ${safeText(formatDate(rangeEnd))} · ${safeText(season.name || season.seasonKey)}</div>
+          </div>
+        </div>
+        <div class="meso-print-grid">${rowsHTML}</div>
+      </div>
     </div>
-    <div class="page-break"></div>
+    <script>
+      (function () {
+        function scaleMesoPage() {
+          var outer = document.getElementById('meso-print-outer');
+          var page  = document.getElementById('meso-print-page');
+          if (!outer || !page) return;
+          var PX_PER_MM = 96 / 25.4;
+          var pageWidthPx  = 277 * PX_PER_MM;
+          var pageHeightPx = 190 * PX_PER_MM;
+
+          page.style.transform = 'none';
+          page.style.width = pageWidthPx + 'px';
+          var natural = page.scrollHeight || 1;
+          var scale = Math.min(1, pageHeightPx / natural);
+          if (!isFinite(scale) || scale <= 0) scale = 1;
+
+          page.style.width = (pageWidthPx / scale) + 'px';
+          page.style.transform = 'scale(' + scale + ')';
+        }
+        scaleMesoPage();
+        requestAnimationFrame(scaleMesoPage);
+        window.addEventListener('load', scaleMesoPage);
+        window.addEventListener('beforeprint', scaleMesoPage);
+        window.addEventListener('resize', scaleMesoPage);
+      })();
+    </script>
   `;
 }
