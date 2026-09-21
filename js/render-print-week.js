@@ -74,7 +74,7 @@ export async function printWeek(numWeeks = 1) {
     win.document.write(html);
     win.document.close();
     win.focus();
-    setTimeout(() => { win.print(); }, 600);
+    setTimeout(() => { win.print(); }, 900);
   } catch (err) {
     win.close();
     alert('Error: ' + err.message);
@@ -176,7 +176,7 @@ export async function printAllWeeks() {
     win.document.write(html);
     win.document.close();
     win.focus();
-    setTimeout(() => { win.print(); }, 600);
+    setTimeout(() => { win.print(); }, 900);
   } catch (err) {
     win.close();
     alert('Error cargando planificaciones: ' + err.message);
@@ -309,7 +309,7 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
           if (!page) return;
           var headerHeightPx = (header && header.classList.contains('print-sheet-header'))
             ? header.getBoundingClientRect().height : 0;
-          var availableHeightPx = Math.max(60, (totalHeightPx - headerHeightPx) * 0.95 - 24);
+          var availableHeightPx = Math.max(60, (totalHeightPx - headerHeightPx) * 0.90 - 30);
 
           outer.style.width  = pageWidthPx + 'px';
           outer.style.height = availableHeightPx + 'px';
@@ -330,6 +330,10 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
       requestAnimationFrame(scaleSheets);
       window.addEventListener('load', scaleSheets);
       window.addEventListener('beforeprint', scaleSheets);
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(scaleSheets);
+      }
+      setTimeout(scaleSheets, 400);
       window.addEventListener('resize', scaleSheets);
     })();
   </script>
@@ -540,7 +544,7 @@ export async function printMesociclo() {
     win.document.write(html);
     win.document.close();
     win.focus();
-    setTimeout(() => { win.print(); }, 700);
+    setTimeout(() => { win.print(); }, 900);
   } catch (err) {
     win.close();
     alert('Error: ' + err.message);
