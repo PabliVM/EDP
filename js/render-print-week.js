@@ -289,10 +289,49 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
     .meso-print-blocks .print-block { flex: 1; min-width: 0; }
     .meso-print-label { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 8px; font-weight: 800; color: #333; background: #f0f4fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1px solid #d1d9e6; border-radius: 6px; padding: 3px; line-height: 1.3; }
     .meso-print-label span { font-size: 7px; font-weight: 600; color: #666; }
+
+    .print-sheet-outer { width: 277mm; overflow: hidden; position: relative; page-break-inside: avoid; break-inside: avoid; }
+    .print-sheet-page  { position: absolute; top: 0; left: 0; transform-origin: top left; }
   </style>
 </head>
 <body>
   ${contentHTML}
+  <script>
+    (function () {
+      function scaleSheets() {
+        var PX_PER_MM      = 96 / 25.4;
+        var pageWidthPx    = 277 * PX_PER_MM;
+        var totalHeightPx  = 190 * PX_PER_MM;
+        document.querySelectorAll('.print-sheet-outer').forEach(function (outer) {
+          var page   = outer.querySelector('.print-sheet-page');
+          var header = outer.previousElementSibling;
+          if (!page) return;
+          var headerHeightPx = (header && header.classList.contains('print-sheet-header'))
+            ? header.getBoundingClientRect().height : 0;
+          var availableHeightPx = Math.max(60, totalHeightPx - headerHeightPx - 8);
+
+          outer.style.width  = pageWidthPx + 'px';
+          outer.style.height = availableHeightPx + 'px';
+
+          page.style.transform = 'none';
+          page.style.width = pageWidthPx + 'px';
+          var natural = page.scrollHeight || 1;
+          var scale = availableHeightPx / natural;
+          if (!isFinite(scale) || scale <= 0) scale = 1;
+          scale = Math.min(scale, 1);   // aquí solo encoge si no cabe, nunca agranda
+          scale = Math.max(0.35, scale);
+
+          page.style.width = (pageWidthPx / scale) + 'px';
+          page.style.transform = 'scale(' + scale + ')';
+        });
+      }
+      scaleSheets();
+      requestAnimationFrame(scaleSheets);
+      window.addEventListener('load', scaleSheets);
+      window.addEventListener('beforeprint', scaleSheets);
+      window.addEventListener('resize', scaleSheets);
+    })();
+  </script>
 </body>
 </html>`;
 }
@@ -359,18 +398,24 @@ function buildSheetHTML({ teamFull, plans, photoURL, weekObs, season, microN, mi
 
   return `
     <div>
-      <div class="print-header">
-        <div class="print-header-logo"><img src="${logoSrc}" alt="RM" /></div>
-        <div class="print-header-text">
-          <div class="print-header-title">Microciclo - Departamento GK</div>
-          <div class="print-header-sub">Planificación semanal de porteros</div>
-          <div class="print-header-week">📅 ${safeText(startFull)} - ${safeText(end || '')} &nbsp;·&nbsp; Microciclo ${microN}${microPhase ? ` (${microPhase === 'competicion' ? 'Competición' : 'Pretemporada'})` : ''}</div>
+      <div class="print-sheet-header">
+        <div class="print-header">
+          <div class="print-header-logo"><img src="${logoSrc}" alt="RM" /></div>
+          <div class="print-header-text">
+            <div class="print-header-title">Microciclo - Departamento GK</div>
+            <div class="print-header-sub">Planificación semanal de porteros</div>
+            <div class="print-header-week">📅 ${safeText(startFull)} - ${safeText(end || '')} &nbsp;·&nbsp; Microciclo ${microN}${microPhase ? ` (${microPhase === 'competicion' ? 'Competición' : 'Pretemporada'})` : ''}</div>
+          </div>
+          <div class="print-header-team">${safeText(teamFull)}</div>
+          ${photoHTML}
         </div>
-        <div class="print-header-team">${safeText(teamFull)}</div>
-        ${photoHTML}
       </div>
-      <div class="print-grid">${daysHTML}</div>
-      ${obsHTML}
+      <div class="print-sheet-outer">
+        <div class="print-sheet-page">
+          <div class="print-grid">${daysHTML}</div>
+          ${obsHTML}
+        </div>
+      </div>
     </div>
     <div class="page-break"></div>
   `;
