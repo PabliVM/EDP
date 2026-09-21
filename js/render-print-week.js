@@ -290,8 +290,9 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
     .meso-print-label { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 8px; font-weight: 800; color: #333; background: #f0f4fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1px solid #d1d9e6; border-radius: 6px; padding: 3px; line-height: 1.3; }
     .meso-print-label span { font-size: 7px; font-weight: 600; color: #666; }
 
-    .print-sheet-outer { width: 277mm; overflow: hidden; position: relative; page-break-inside: avoid; break-inside: avoid; }
+    .print-sheet-outer { width: 277mm; overflow: hidden; position: relative; }
     .print-sheet-page  { position: absolute; top: 0; left: 0; transform-origin: top left; }
+    .print-sheet { page-break-inside: avoid; break-inside: avoid; }
   </style>
 </head>
 <body>
@@ -397,7 +398,7 @@ function buildSheetHTML({ teamFull, plans, photoURL, weekObs, season, microN, mi
   ` : '';
 
   return `
-    <div>
+    <div class="print-sheet">
       <div class="print-sheet-header">
         <div class="print-header">
           <div class="print-header-logo"><img src="${logoSrc}" alt="RM" /></div>
