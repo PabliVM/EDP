@@ -309,7 +309,7 @@ function buildHTMLWrapper(contentHTML, logoSrc, title) {
           if (!page) return;
           var headerHeightPx = (header && header.classList.contains('print-sheet-header'))
             ? header.getBoundingClientRect().height : 0;
-          var availableHeightPx = Math.max(60, totalHeightPx - headerHeightPx - 8);
+          var availableHeightPx = Math.max(60, (totalHeightPx - headerHeightPx) * 0.95 - 24);
 
           outer.style.width  = pageWidthPx + 'px';
           outer.style.height = availableHeightPx + 'px';
