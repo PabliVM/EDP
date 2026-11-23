@@ -2,7 +2,7 @@
 // RENDER-PRINT-WEEK.JS — Impresión semanal
 // ================================================
 
-import { porterosState }                       from './porteros-state.js';
+import { porterosState, getDayTypeLabel }      from './porteros-state.js';
 import { BLOCK_TYPES, PORTEROS_TEAMS, PORTERO_TEAM } from './porteros-constants.js';
 import { getWeekDays, formatWeekRange, getMicroNumber, getMicroInfoForTeam, toDateKey, getDayName, addWeeks, getMesoWeeks, getCurrentMesoKey, formatDate } from './dates.js';
 import { safeText }                            from './utils.js';
@@ -449,13 +449,13 @@ function buildDayHTML(date, plan, icons) {
 
 function buildDayContent(dayType, plan, icons) {
   if (!dayType || dayType === 'libre') return `<div class="print-empty">Sin planificación</div>`;
-  if (dayType === 'descanso')  return `<div class="print-vertical"><span class="print-vertical-word descanso">${'DESCANSO'.split('').join('<br>')}</span></div>`;
-  if (dayType === 'seleccion') return `<div class="print-vertical"><span class="print-vertical-word seleccion">${'SELECCIÓN'.split('').join('<br>')}</span></div>`;
-  if (dayType === 'viaje')     return `<div class="print-vertical"><span class="print-vertical-word viaje">${'VIAJE'.split('').join('<br>')}</span></div>`;
+  if (dayType === 'descanso')  return `<div class="print-vertical"><span class="print-vertical-word descanso">${vertWord('descanso')}</span></div>`;
+  if (dayType === 'seleccion') return `<div class="print-vertical"><span class="print-vertical-word seleccion">${vertWord('seleccion')}</span></div>`;
+  if (dayType === 'viaje')     return `<div class="print-vertical"><span class="print-vertical-word viaje">${vertWord('viaje')}</span></div>`;
   if (dayType === 'partido') {
     const mi = plan?.matchInfo || {};
     return `
-      <div class="print-vertical"><span class="print-vertical-word partido">${'PARTIDO'.split('').join('<br>')}</span></div>
+      <div class="print-vertical"><span class="print-vertical-word partido">${vertWord('partido')}</span></div>
       ${mi.rival || mi.hora ? `<div class="print-match-info">
         ${mi.rival          ? `<div><strong>vs</strong> ${safeText(mi.rival)}</div>` : ''}
         ${mi.localVisitante ? `<div>${safeText(mi.localVisitante)}</div>`            : ''}
@@ -467,7 +467,7 @@ function buildDayContent(dayType, plan, icons) {
   if (dayType === 'torneo') {
     const ti = plan?.tournamentInfo || {};
     return `
-      <div class="print-vertical"><span class="print-vertical-word torneo">${'TORNEO'.split('').join('<br>')}</span></div>
+      <div class="print-vertical"><span class="print-vertical-word torneo">${vertWord('torneo')}</span></div>
       ${ti.nombre ? `<div class="print-match-info"><div><strong>${safeText(ti.nombre)}</strong></div>${ti.lugar ? `<div>📍 ${safeText(ti.lugar)}</div>` : ''}</div>` : ''}
     `;
   }
@@ -476,7 +476,11 @@ function buildDayContent(dayType, plan, icons) {
     if (blocks.length === 0) return `<div class="print-empty">Sin bloques</div>`;
     return blocks.map(block => buildBlockHTML(block, icons)).join('');
   }
-  return `<div class="print-empty">Sin planificación</div>`;
+  return `<div class="print-vertical"><span class="print-vertical-word">${vertWord(dayType)}</span></div>`;
+}
+
+function vertWord(key) {
+  return [...getDayTypeLabel(key).toUpperCase()].map(safeText).join('<br>');
 }
 
 function buildBlockHTML(block, icons) {

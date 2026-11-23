@@ -2,7 +2,7 @@
 // RENDER-CONFIG-PANEL.JS — Panel lateral config
 // ================================================
 
-import { porterosState, setPorterosState } from './porteros-state.js';
+import { porterosState, setPorterosState, getDayTypes } from './porteros-state.js';
 import { PORTEROS_TEAMS, BLOCK_TYPES }      from './porteros-constants.js';
 import {
   listenSeasons, createSeason, setActiveSeason,
@@ -52,12 +52,15 @@ function renderPanelContent(panel) {
         data-ctab="conceptos">Conceptos</button>
       <button class="config-tab-btn ${_activeTab === 'mesociclos' ? 'active' : ''}"
         data-ctab="mesociclos">Mesociclos F7</button>
+      <button class="config-tab-btn ${_activeTab === 'tiposdia' ? 'active' : ''}"
+        data-ctab="tiposdia">Tipos de día</button>
     </div>
 
     <div class="config-panel-body">
       <div id="cp-tab-temporadas" ${_activeTab !== 'temporadas' ? 'style="display:none"' : ''}></div>
       <div id="cp-tab-conceptos"  ${_activeTab !== 'conceptos'  ? 'style="display:none"' : ''}></div>
       <div id="cp-tab-mesociclos" ${_activeTab !== 'mesociclos' ? 'style="display:none"' : ''}></div>
+      <div id="cp-tab-tiposdia"   ${_activeTab !== 'tiposdia'   ? 'style="display:none"' : ''}></div>
     </div>
   `;
 
@@ -72,12 +75,14 @@ function renderPanelContent(panel) {
       document.getElementById('cp-tab-temporadas').style.display = _activeTab === 'temporadas' ? '' : 'none';
       document.getElementById('cp-tab-conceptos').style.display  = _activeTab === 'conceptos'  ? '' : 'none';
       document.getElementById('cp-tab-mesociclos').style.display = _activeTab === 'mesociclos' ? '' : 'none';
+      document.getElementById('cp-tab-tiposdia').style.display   = _activeTab === 'tiposdia'   ? '' : 'none';
     });
   });
 
   renderTabTemporadas();
   renderTabConceptos();
   renderTabMesociclos();
+  renderTabTiposDia();
 
   if (_unsubSeas) _unsubSeas();
   _unsubSeas = listenSeasons(
@@ -416,6 +421,114 @@ async function saveMesociclos() {
     await saveConfigSection('mesociclos_f7', meso);
     setPorterosState({ mesociclosF7: meso });
     showSuccess('Mesociclos guardados.');
+  } catch (err) {
+    showError('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── PESTAÑA TIPOS DE DÍA ──────────────────────────
+
+// Tipos con comportamiento propio: se puede renombrar, no borrar.
+const TIPOS_PROTEGIDOS = ['entrenamiento', 'partido', 'torneo'];
+let _tiposDia = [];
+
+function renderTabTiposDia() {
+  const tab = document.getElementById('cp-tab-tiposdia');
+  if (!tab) return;
+
+  _tiposDia = getDayTypes().map(dt => ({ key: dt.key, label: dt.label }));
+
+  tab.innerHTML = `
+    <div class="config-section-title mt-12">Tipos de día</div>
+    <p class="text-muted text-xs mb-12">
+      Opciones del selector de cada día. Entrenamiento, Partido y Torneo se pueden renombrar pero no borrar.
+    </p>
+    <div id="cp-tiposdia-list"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <input type="text" class="input" id="cp-tipo-new" placeholder="Nuevo tipo (ej. Viaje)" style="flex:1;" />
+      <button class="btn btn-ghost btn-sm" id="cp-btn-add-tipo">＋ Añadir</button>
+    </div>
+    <button class="btn btn-primary btn-sm w-full mt-12" id="cp-btn-save-tipos">Guardar tipos de día</button>
+  `;
+
+  document.getElementById('cp-btn-add-tipo').addEventListener('click', addTipoDia);
+  document.getElementById('cp-tipo-new').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTipoDia();
+  });
+  document.getElementById('cp-btn-save-tipos').addEventListener('click', saveTiposDia);
+  renderTiposDiaList();
+}
+
+function renderTiposDiaList() {
+  const list = document.getElementById('cp-tiposdia-list');
+  if (!list) return;
+
+  list.innerHTML = _tiposDia.map((t, i) => `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <input type="text" class="input" data-tipo-idx="${i}" value="${safeText(t.label)}" style="flex:1;" />
+      <button class="btn btn-ghost btn-sm" data-tipo-up="${i}" ${i === 0 ? 'disabled' : ''} title="Subir">↑</button>
+      ${TIPOS_PROTEGIDOS.includes(t.key)
+        ? '<span style="width:30px;"></span>'
+        : `<button class="btn btn-sm" style="color:#ef4444;border-color:#7f1d1d;background:transparent;"
+            data-tipo-del="${i}" title="Borrar">✕</button>`}
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-tipo-idx]').forEach(el => {
+    el.addEventListener('input', () => { _tiposDia[+el.dataset.tipoIdx].label = el.value; });
+  });
+  list.querySelectorAll('[data-tipo-up]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = +btn.dataset.tipoUp;
+      [_tiposDia[i - 1], _tiposDia[i]] = [_tiposDia[i], _tiposDia[i - 1]];
+      renderTiposDiaList();
+    });
+  });
+  list.querySelectorAll('[data-tipo-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = _tiposDia[+btn.dataset.tipoDel];
+      if (!confirm(`¿Borrar "${t.label}"? Los días ya guardados con este tipo no se borran.`)) return;
+      _tiposDia.splice(+btn.dataset.tipoDel, 1);
+      renderTiposDiaList();
+    });
+  });
+}
+
+function slugTipo(label) {
+  return label.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+
+function addTipoDia() {
+  const input = document.getElementById('cp-tipo-new');
+  const label = input.value.trim();
+  if (!label) return;
+  const base = slugTipo(label) || 'tipo';
+  let key = base, n = 2;
+  while (_tiposDia.some(t => t.key === key)) key = `${base}_${n++}`;
+  _tiposDia.push({ key, label });
+  input.value = '';
+  renderTiposDiaList();
+}
+
+async function saveTiposDia() {
+  const items = _tiposDia
+    .map(t => ({ key: t.key, label: t.label.trim() }))
+    .filter(t => t.label);
+  if (items.length !== _tiposDia.length) { showError('Hay tipos sin nombre.'); return; }
+
+  const btn = document.getElementById('cp-btn-save-tipos');
+  btn.disabled = true;
+  try {
+    await saveConfigSection('tipos_dia', { items });
+    setPorterosState({ dayTypes: items });
+    showSuccess('Tipos de día guardados.');
+    if (porterosState.currentView === 'semana') {
+      const { renderWeekPlanning } = await import('./render-week-planning.js');
+      renderWeekPlanning();
+    }
   } catch (err) {
     showError('Error: ' + err.message);
   } finally {

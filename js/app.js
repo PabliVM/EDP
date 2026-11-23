@@ -96,6 +96,7 @@ function loadConfig() {
         microciclos:  cfg.microciclos  || {},
         conceptos:    cfg.conceptos    || {},
         mesociclosF7: cfg.mesociclos_f7 || {},
+        dayTypes:     cfg.tipos_dia?.items || null,
       });
       renderHeader();
     },

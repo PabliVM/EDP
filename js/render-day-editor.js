@@ -2,10 +2,10 @@
 // RENDER-DAY-EDITOR.JS
 // ================================================
 
-import { porterosState }        from './porteros-state.js';
+import { porterosState, getDayTypes } from './porteros-state.js';
 import { getDayName, formatDate, toDateKey, getWeekKey, getMondayOfWeek } from './dates.js';
 import { saveDayPlan }          from './firebase-service.js';
-import { BLOCK_TYPES, DAY_TYPES, INTENSIDADES, IMPACTOS } from './porteros-constants.js';
+import { BLOCK_TYPES, INTENSIDADES, IMPACTOS } from './porteros-constants.js';
 import { showError, safeText }  from './utils.js';
 
 let _plan = null;
@@ -69,8 +69,8 @@ function renderModal() {
       <label class="label">Tipo de día</label>
       <select class="select" id="editor-day-type">
         <option value="">Sin definir</option>
-        ${DAY_TYPES.map(dt =>
-          `<option value="${dt.key}" ${dayType === dt.key ? 'selected' : ''}>${dt.label}</option>`
+        ${getDayTypes().map(dt =>
+          `<option value="${safeText(dt.key)}" ${dayType === dt.key ? 'selected' : ''}>${safeText(dt.label)}</option>`
         ).join('')}
       </select>
     </div>

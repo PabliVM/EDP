@@ -3,8 +3,8 @@
 // ================================================
 
 import { getDayName, formatDate, toDateKey, getWeekKey, getMondayOfWeek } from './dates.js';
-import { porterosState } from './porteros-state.js';
-import { DAY_TYPES, BLOCK_TYPES } from './porteros-constants.js';
+import { porterosState, getDayTypes, getDayTypeLabel } from './porteros-state.js';
+import { BLOCK_TYPES } from './porteros-constants.js';
 import { saveDayPlan }            from './firebase-service.js';
 import { openDayEditor, openSingleBlockEditor } from './render-day-editor.js';
 import { showError, safeText }    from './utils.js';
@@ -26,8 +26,8 @@ export function renderDayColumn(date, plan, isToday = false) {
     <div class="day-type-row">
       <select class="day-type-select">
         <option value="">Sin definir</option>
-        ${DAY_TYPES.map(dt =>
-          `<option value="${dt.key}" ${dayType === dt.key ? 'selected' : ''}>${dt.label}</option>`
+        ${getDayTypes().map(dt =>
+          `<option value="${safeText(dt.key)}" ${dayType === dt.key ? 'selected' : ''}>${safeText(dt.label)}</option>`
         ).join('')}
       </select>
     </div>
@@ -59,19 +59,19 @@ function renderDayBody(body, date, plan, dayType, icons) {
   }
 
   if (dayType === 'descanso') {
-    renderSpecialDay(body, 'DESCANSO');
+    renderSpecialDay(body, getDayTypeLabel('descanso').toUpperCase());
     if (plan?.notes) body.insertAdjacentHTML('beforeend', `<div class="day-info-compact">${safeText(plan.notes)}</div>`);
     return;
   }
 
   if (dayType === 'seleccion') {
-    renderSpecialDay(body, 'SELECCIÓN');
+    renderSpecialDay(body, getDayTypeLabel('seleccion').toUpperCase());
     if (plan?.notes) body.insertAdjacentHTML('beforeend', `<div class="day-info-compact">${safeText(plan.notes)}</div>`);
     return;
   }
 
   if (dayType === 'partido') {
-    renderSpecialDay(body, 'PARTIDO');
+    renderSpecialDay(body, getDayTypeLabel('partido').toUpperCase());
     if (plan?.matchInfo?.rival) {
       const mi = plan.matchInfo;
       body.insertAdjacentHTML('beforeend', `
@@ -86,7 +86,7 @@ function renderDayBody(body, date, plan, dayType, icons) {
   }
 
   if (dayType === 'torneo') {
-    renderSpecialDay(body, 'TORNEO');
+    renderSpecialDay(body, getDayTypeLabel('torneo').toUpperCase());
     appendAddBtn(body, date, plan, 'Añadir info');
     return;
   }
@@ -102,6 +102,9 @@ function renderDayBody(body, date, plan, dayType, icons) {
       body.appendChild(wrap);
     }
     appendAddBtn(body, date, plan, '＋ Añadir bloque');
+  } else {
+    // Tipos personalizados (creados en Configuración)
+    renderSpecialDay(body, getDayTypeLabel(dayType).toUpperCase());
   }
 
   // Observaciones del día
@@ -116,7 +119,7 @@ function renderDayBody(body, date, plan, dayType, icons) {
 function renderSpecialDay(body, label) {
   const wrap = document.createElement('div');
   wrap.className = 'day-special';
-  wrap.innerHTML = `<span class="day-special-label">${label.split('').join('<br>')}</span>`;
+  wrap.innerHTML = `<span class="day-special-label">${[...label].map(safeText).join('<br>')}</span>`;
   body.appendChild(wrap);
 }
 
