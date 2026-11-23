@@ -479,8 +479,14 @@ function buildDayContent(dayType, plan, icons) {
   return `<div class="print-vertical"><span class="print-vertical-word">${vertWord(dayType)}</span></div>`;
 }
 
+// Varias palabras → una columna vertical por palabra (ej. YOUTH | LEAGUE).
 function vertWord(key) {
-  return [...getDayTypeLabel(key).toUpperCase()].map(safeText).join('<br>');
+  const words = getDayTypeLabel(key).toUpperCase().trim().split(/\s+/);
+  const col = w => [...w].map(safeText).join('<br>');
+  if (words.length < 2) return col(words[0] || '');
+  return words.map(w =>
+    `<span style="display:inline-block;vertical-align:top;margin:0 0.2em;">${col(w)}</span>`
+  ).join('');
 }
 
 function buildBlockHTML(block, icons) {

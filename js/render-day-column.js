@@ -119,8 +119,18 @@ function renderDayBody(body, date, plan, dayType, icons) {
 function renderSpecialDay(body, label) {
   const wrap = document.createElement('div');
   wrap.className = 'day-special';
-  wrap.innerHTML = `<span class="day-special-label">${[...label].map(safeText).join('<br>')}</span>`;
+  wrap.innerHTML = `<span class="day-special-label">${verticalColumns(label)}</span>`;
   body.appendChild(wrap);
+}
+
+// Varias palabras → una columna vertical por palabra (ej. YOUTH | LEAGUE).
+function verticalColumns(label) {
+  const words = label.trim().split(/\s+/);
+  const col = w => [...w].map(safeText).join('<br>');
+  if (words.length < 2) return col(words[0] || '');
+  return words.map(w =>
+    `<span style="display:inline-block;vertical-align:top;margin:0 0.2em;">${col(w)}</span>`
+  ).join('');
 }
 
 export function renderBlock(block, icons, date, plan) {
